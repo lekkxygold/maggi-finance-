@@ -1,5 +1,5 @@
 // Initialization credentials configuration setup 
-const SUPABASE_URL = "https://supabase.co"; 
+const SUPABASE_URL = "https://athszjeyyxosemqyzmzz.supabase.co";
 const SUPABASE_ANON_KEY = "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImF0aHN6amV5eXhvc2VtcXl6bXp6Iiwicm9sZSI6ImFub24iLCJpYXQiOjE3OTMyMDM0ODksImV4cCI6MjEwODc3OTQ4OX0.MjF0uusJGt9LK48Mv7xqc1sBgyXrvZk-_g8n19fGsrA";
 
 const supabase = bootstrapSupabaseClient();
