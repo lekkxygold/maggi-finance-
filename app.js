@@ -2,15 +2,15 @@
 const SUPABASE_URL = "https://athszjeyyxosemqyzmzz.supabase.co";
 const SUPABASE_ANON_KEY = "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImF0aHN6amV5eXhvc2VtcXl6bXp6Iiwicm9sZSI6ImFub24iLCJpYXQiOjE3OTMyMDM0ODksImV4cCI6MjEwODc3OTQ4OX0.MjF0uusJGt9LK48Mv7xqc1sBgyXrvZk-_g8n19fGsrA";
 
-let supabase = null;
+let dbClient = null;
 let currentUserProfile = null;
 
 // Safely initialize Supabase Client
 function bootstrapSupabaseClient() {
-    if (supabase) return supabase;
+    if (dbClient) return dbClient;
     if (window.supabase && typeof window.supabase.createClient === 'function') {
-        supabase = window.supabase.createClient(SUPABASE_URL, SUPABASE_ANON_KEY);
-        return supabase;
+        dbClient = window.supabase.createClient(SUPABASE_URL, SUPABASE_ANON_KEY);
+        return dbClient;
     }
     return null;
 }
@@ -31,7 +31,6 @@ function switchView(viewId) {
     const target = document.getElementById(viewId);
     if (target) target.classList.remove('hidden');
 
-    // Update nav active tab styling
     const navTabs = document.querySelectorAll('#app-nav div');
     navTabs.forEach(tab => tab.classList.remove('active'));
 }
@@ -86,7 +85,6 @@ async function loadUserData(user) {
     if (profile) {
         currentUserProfile = profile;
         
-        // Update header & view values
         const idDisplay = document.getElementById('user-id-display');
         if (idDisplay) idDisplay.innerText = "Maggi ID: " + (profile.maggi_id || 'N/A');
 
@@ -96,7 +94,6 @@ async function loadUserData(user) {
         const dashInvest = document.getElementById('dash-investment');
         if (dashInvest) dashInvest.innerText = "Active Investments: ₦" + (profile.total_investment || 0).toLocaleString();
 
-        // Reveal navigation toolbar and dashboard
         const appNav = document.getElementById('app-nav');
         if (appNav) appNav.classList.remove('hidden');
 
@@ -111,12 +108,14 @@ async function loadUserData(user) {
 
 // Check if user is already logged in on startup
 document.addEventListener('DOMContentLoaded', async () => {
-    bootstrapSupabaseClient();
     const client = bootstrapSupabaseClient();
     if (client) {
         const { data: { session } } = await client.auth.getSession();
         if (session && session.user) {
             await loadUserData(session.user);
+        } else {
+            const idDisplay = document.getElementById('user-id-display');
+            if (idDisplay) idDisplay.innerText = "Maggi ID: Guest";
         }
     }
 });
