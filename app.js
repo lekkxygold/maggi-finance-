@@ -1,221 +1,530 @@
-<!DOCTYPE html>
-<html lang="en">
-<head>
-    <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Maggi Finance Investment Platform</title>
-    <!-- Include Supabase CDN -->
-    <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
-    <style>
-        :root { --primary: #e62310; --accent: #f2c200; --dark: #121212; --card-bg: #1e1e1e; --light: #f8f9fa; }
-        body { font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif; background: var(--light); margin: 0; padding: 0; color: #1a1a1a; }
-        .header { background: var(--primary); color: white; padding: 15px; display: flex; align-items: center; justify-content: space-between; }
-        .header-left { display: flex; align-items: center; gap: 12px; }
-        .header img { height: 45px; width: 45px; object-fit: cover; border-radius: 6px; border: 2px solid white; background: white; }
-        .container { padding: 15px; max-width: 600px; margin: 0 auto; }
-        .card { background: white; padding: 20px; border-radius: 12px; margin-bottom: 15px; box-shadow: 0 4px 6px rgba(0,0,0,0.05); border-left: 5px solid var(--accent); }
-        .btn { background: var(--primary); color: white; border: none; padding: 12px 20px; width: 100%; border-radius: 8px; font-weight: bold; font-size: 16px; cursor: pointer; }
-        .btn-secondary { background: #333; }
-        .btn-success { background: #28a745; color: white; }
-        .btn-danger { background: #dc3545; color: white; }
-        .nav-tabs { display: grid; grid-template-columns: repeat(6, 1fr); background: white; position: fixed; bottom: 0; width: 100%; box-shadow: 0 -2px 10px rgba(0,0,0,0.1); font-size: 10px; text-align: center; z-index: 1000; }
-        .nav-tabs div { padding: 12px 0; cursor: pointer; border-top: 3px solid transparent; }
-        .nav-tabs .active { border-top-color: var(--primary); font-weight: bold; color: var(--primary); }
-        .tier-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 10px; }
-        .tier-box { background: #fffde6; border: 1px solid var(--accent); padding: 15px; border-radius: 8px; text-align: center; }
-        .hidden { display: none !important; }
-        input, select { width: 100%; padding: 10px; margin: 8px 0; border: 1px solid #ccc; border-radius: 6px; box-sizing: border-box; }
-        .copy-box { background: #f1f1f1; padding: 10px; border-radius: 6px; font-size: 13px; display: flex; justify-content: space-between; align-items: center; margin: 8px 0; word-break: break-all; }
+// Initialization credentials configuration setup
+const SUPABASE_URL = "https://athszjeyyxosemqyzmzz.supabase.co";
+const SUPABASE_ANON_KEY = "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImF0aHN6amV5eXhvc2VtcXl6bXp6Iiwicm9sZSI6ImFub24iLCJpYXQiOjE3OTMyMDM0ODksImV4cCI6MjEwODc3OTQ4OX0.MjF0uusJGt9LK48Mv7xqc1sBgyXrvZk-_g8n19fGsrA";
 
-        /* Admin Dark Theme */
-        .admin-theme { background: var(--dark); color: #fff; padding: 15px; border-radius: 16px; }
-        .admin-nav { display: flex; gap: 8px; background: #252525; padding: 6px; border-radius: 20px; margin-bottom: 15px; }
-        .admin-nav-btn { flex: 1; background: transparent; border: none; color: #aaa; padding: 10px; border-radius: 15px; font-size: 12px; font-weight: bold; cursor: pointer; }
-        .admin-nav-btn.active { background: #f5eedc; color: #000; }
-        .alert-card { background: #1a1a1a; border: 1px solid #332b17; border-radius: 14px; padding: 16px; margin-bottom: 12px; }
-        .alert-badge { background: #333; color: #aaa; font-size: 10px; font-weight: bold; padding: 3px 8px; border-radius: 10px; display: inline-block; margin-bottom: 8px; }
-        .alert-title { font-size: 16px; font-weight: bold; margin: 0 0 4px 0; color: #fff; }
-        .alert-desc { font-size: 12px; color: #aaa; margin: 0 0 10px 0; }
-        .alert-amount { font-size: 18px; font-weight: bold; color: #fff; margin-bottom: 12px; }
-        .admin-table { width: 100%; font-size: 12px; border-collapse: collapse; color: #fff; }
-        .admin-table th, .admin-table td { border: 1px solid #333; padding: 8px; text-align: left; }
-        .admin-table th { background: #252525; }
-        .tx-item { background: #f9f9f9; border: 1px solid #eee; padding: 10px; border-radius: 8px; margin-bottom: 8px; font-size: 12px; display: flex; justify-content: space-between; align-items: center; }
-    </style>
-</head>
-<body>
+let dbClient = null;
+let currentUserProfile = null;
 
-    <!-- Header with Logout Option -->
-    <div class="header">
-        <div class="header-left">
-            <img src="https://upload.wikimedia.org/wikipedia/commons/thumb/e/ef/Maggi_logo.svg/1200px-Maggi_logo.svg.png" alt="Maggi Logo">
+function bootstrapSupabaseClient() {
+    if (dbClient) return dbClient;
+    if (window.supabase && typeof window.supabase.createClient === 'function') {
+        dbClient = window.supabase.createClient(SUPABASE_URL, SUPABASE_ANON_KEY);
+        return dbClient;
+    }
+    return null;
+}
+
+function generateMaggiId() {
+    return "MG-" + Math.floor(100000 + Math.random() * 900000);
+}
+
+function switchView(viewId) {
+    const views = ['view-auth', 'view-dashboard', 'view-investment', 'view-wallet', 'view-team', 'view-gift', 'view-admin'];
+    views.forEach(id => {
+        const el = document.getElementById(id);
+        if (el) el.classList.add('hidden');
+    });
+    
+    const target = document.getElementById(viewId);
+    if (target) target.classList.remove('hidden');
+
+    const navTabs = document.querySelectorAll('#app-nav div');
+    navTabs.forEach(tab => tab.classList.remove('active'));
+
+    if (viewId === 'view-wallet' && currentUserProfile) {
+        loadUserTransactions();
+    }
+
+    if (viewId === 'view-team' && currentUserProfile) {
+        loadTeamRecords();
+    }
+
+    if (viewId === 'view-admin' && currentUserProfile) {
+        if (currentUserProfile.is_admin || currentUserProfile.email === 'omoopeola1@gmail.com') {
+            loadAdminDashboardData();
+        } else {
+            alert("Access denied. Admin rights required.");
+            switchView('view-dashboard');
+        }
+    }
+}
+
+function switchAdminTab(tabName) {
+    const subTabs = ['alerts', 'review', 'users', 'gift'];
+    subTabs.forEach(t => {
+        const panel = document.getElementById(`admin-sub-${t}`);
+        const btn = document.getElementById(`tab-btn-${t}`);
+        if (panel) panel.classList.add('hidden');
+        if (btn) btn.classList.remove('active');
+    });
+
+    const activePanel = document.getElementById(`admin-sub-${tabName}`);
+    const activeBtn = document.getElementById(`tab-btn-${tabName}`);
+    if (activePanel) activePanel.classList.remove('hidden');
+    if (activeBtn) activeBtn.classList.add('active');
+
+    if (tabName === 'review' || tabName === 'alerts') {
+        loadAdminDashboardData();
+    }
+}
+
+async function handleAuth(type) {
+    const client = bootstrapSupabaseClient();
+    if (!client) return alert("Database initializing. Please try again.");
+
+    const email = document.getElementById('auth-email').value.trim().toLowerCase();
+    const password = document.getElementById('auth-password').value;
+
+    if (!email || !password) return alert("Please enter email and password.");
+
+    const isAdmin = (email === 'omoopeola1@gmail.com');
+    const urlParams = new URLSearchParams(window.location.search);
+    const refCode = urlParams.get('ref') || null;
+
+    if (type === 'register') {
+        const { data, error } = await client.auth.signUp({ email, password });
+        if (error) return alert(error.message);
+
+        const maggiId = generateMaggiId();
+        if (data.user) {
+            await client.from('profiles').insert([
+                { 
+                    id: data.user.id, 
+                    maggi_id: maggiId, 
+                    wallet_balance: 2000, 
+                    total_investment: 0, 
+                    is_admin: isAdmin, 
+                    email: email,
+                    referred_by: refCode 
+                }
+            ]);
+        }
+        alert("Registration complete! Welcome Bonus ₦2,000 credited.");
+        await loadUserData(data.user);
+    } else if (type === 'login') {
+        const { data: logData, error: logError } = await client.auth.signInWithPassword({ email, password });
+        if (logError) return alert(logError.message);
+
+        if (isAdmin) {
+            await client.from('profiles').update({ is_admin: true }).eq('id', logData.user.id);
+        }
+        alert("Login successful!");
+        await loadUserData(logData.user);
+    }
+}
+
+async function handleLogout() {
+    const client = bootstrapSupabaseClient();
+    if (client) {
+        await client.auth.signOut();
+    }
+    currentUserProfile = null;
+    document.getElementById('app-nav').classList.add('hidden');
+    document.getElementById('logout-btn').classList.add('hidden');
+    switchView('view-auth');
+    alert("Logged out successfully.");
+}
+
+async function handleForgotPassword() {
+    const client = bootstrapSupabaseClient();
+    const email = document.getElementById('auth-email').value.trim();
+    if (!email) return alert("Please enter your email address above.");
+    const { error } = await client.auth.resetPasswordForEmail(email, { redirectTo: window.location.origin });
+    if (error) return alert(error.message);
+    alert("Password reset email sent!");
+}
+
+async function loadUserData(user) {
+    const client = bootstrapSupabaseClient();
+    if (!client || !user) return;
+
+    const { data: profile } = await client.from('profiles').select('*').eq('id', user.id).single();
+    
+    if (profile) {
+        currentUserProfile = profile;
+        
+        document.getElementById('user-id-display').innerText = "Maggi ID: " + (profile.maggi_id || 'N/A');
+        document.getElementById('dash-balance').innerText = "₦" + (profile.wallet_balance || 0).toLocaleString();
+        document.getElementById('dash-investment').innerText = "Active Investments: ₦" + (profile.total_investment || 0).toLocaleString();
+
+        if (profile.bank_name) document.getElementById('bank-name').value = profile.bank_name;
+        if (profile.account_number) document.getElementById('account-number').value = profile.account_number;
+        if (profile.account_name) document.getElementById('account-name').value = profile.account_name;
+
+        document.getElementById('referral-link-box').innerText = `https://maggi-finance.onrender.com/?ref=${profile.maggi_id}`;
+
+        renderInvestmentTiers();
+
+        document.getElementById('app-nav').classList.remove('hidden');
+        document.getElementById('logout-btn').classList.remove('hidden');
+
+        if (profile.is_admin || user.email === 'omoopeola1@gmail.com') {
+            document.getElementById('admin-nav-tab').classList.remove('hidden');
+        }
+
+        switchView('view-dashboard');
+    }
+}
+
+function renderInvestmentTiers() {
+    const container = document.getElementById('tiers-container');
+    if (!container) return;
+
+    const plans = [];
+    let price = 6000;
+    for (let i = 1; i <= 10; i++) {
+        plans.push({
+            tier: i,
+            price: price,
+            dailyReturn: price * 0.15,
+            totalReturn: (price * 0.15) * 20,
+            isOpen: i <= 3 
+        });
+        price *= 2;
+    }
+
+    container.innerHTML = plans.map(p => `
+        <div class="tier-box" style="border: 1px solid ${p.isOpen ? 'var(--accent)' : '#ccc'}; background: ${p.isOpen ? '#fffde6' : '#f1f1f1'};">
+            <h4 style="margin: 0 0 5px 0; color: var(--primary);">Tier ${p.tier}</h4>
+            <p style="margin: 4px 0; font-weight: bold; font-size: 15px;">₦${p.price.toLocaleString()}</p>
+            <p style="margin: 2px 0; font-size: 11px;">Daily: ₦${p.dailyReturn.toLocaleString()} (15%)</p>
+            <p style="margin: 2px 0; font-size: 11px;">Duration: 20 Days</p>
+            <p style="margin: 2px 0; font-size: 11px; color: #555;">Total: ₦${p.totalReturn.toLocaleString()}</p>
+            ${p.isOpen ? 
+                `<button class="btn" style="padding: 6px; margin-top: 8px; font-size: 12px;" onclick="investInPlan(${p.price})">Invest Now</button>` : 
+                `<span style="display:inline-block; margin-top:8px; background:#ddd; padding:4px 8px; border-radius:4px; font-size:10px; font-weight:bold; color:#666;">Coming Soon</span>`
+            }
+        </div>
+    `).join('');
+}
+
+async function investInPlan(amount) {
+    const client = bootstrapSupabaseClient();
+    if (!client || !currentUserProfile) return;
+
+    if (currentUserProfile.wallet_balance < amount) return alert("Insufficient wallet balance!");
+
+    const newBalance = currentUserProfile.wallet_balance - amount;
+    const newInvestment = (currentUserProfile.total_investment || 0) + amount;
+
+    await client.from('profiles').update({ wallet_balance: newBalance, total_investment: newInvestment }).eq('id', currentUserProfile.id);
+    alert(`Successfully invested ₦${amount.toLocaleString()}!`);
+    await loadUserData({ id: currentUserProfile.id });
+}
+
+function copyCompanyAccount() {
+    navigator.clipboard.writeText("6141619370");
+    alert("Copied OPay Account: 6141619370!");
+}
+
+function copyReferralLink() {
+    navigator.clipboard.writeText(document.getElementById('referral-link-box').innerText);
+    alert("Referral link copied!");
+}
+
+async function submitDepositRequest() {
+    const client = bootstrapSupabaseClient();
+    const amount = parseFloat(document.getElementById('deposit-amount').value);
+    const proof = document.getElementById('deposit-proof').value.trim();
+
+    if (!amount || !proof) return alert("Please fill amount and proof reference.");
+
+    const { error } = await client.from('deposits').insert([
+        { user_id: currentUserProfile.id, maggi_id: currentUserProfile.maggi_id, amount: amount, proof: proof, status: 'pending' }
+    ]);
+
+    if (error) return alert("Deposit submission error: " + error.message);
+
+    alert("Deposit submitted! Awaiting admin review.");
+    document.getElementById('deposit-amount').value = '';
+    document.getElementById('deposit-proof').value = '';
+    loadUserTransactions();
+}
+
+async function saveUserBankAccount() {
+    const client = bootstrapSupabaseClient();
+    const bankName = document.getElementById('bank-name').value.trim();
+    const accountNumber = document.getElementById('account-number').value.trim();
+    const accountName = document.getElementById('account-name').value.trim();
+
+    if (!bankName || !accountNumber || !accountName) return alert("Please fill all bank fields.");
+
+    const { error } = await client.from('profiles').update({ bank_name: bankName, account_number: accountNumber, account_name: accountName }).eq('id', currentUserProfile.id);
+    if (error) return alert("Error saving bank account: " + error.message);
+
+    alert("Bank account saved successfully!");
+    await loadUserData({ id: currentUserProfile.id });
+}
+
+async function submitWithdrawalRequest() {
+    const client = bootstrapSupabaseClient();
+    if (!currentUserProfile.total_investment || currentUserProfile.total_investment <= 0) return alert("Active investment required to withdraw!");
+
+    const amount = parseFloat(document.getElementById('withdraw-amount').value);
+    if (amount < 2000) return alert("Minimum withdrawal is ₦2,000.");
+    if (currentUserProfile.wallet_balance < amount) return alert("Insufficient balance.");
+
+    const bankDetails = `${document.getElementById('bank-name').value} - ${document.getElementById('account-number').value} (${document.getElementById('account-name').value})`;
+
+    const { error } = await client.from('withdrawals').insert([
+        { 
+            user_id: currentUserProfile.id, 
+            maggi_id: currentUserProfile.maggi_id, 
+            amount: amount, 
+            bank_details: bankDetails,
+            status: 'pending' 
+        }
+    ]);
+
+    if (error) return alert("Withdrawal error: " + error.message);
+
+    alert("Withdrawal submitted! Awaiting admin review.");
+    document.getElementById('withdraw-amount').value = '';
+    loadUserTransactions();
+}
+
+async function loadUserTransactions() {
+    const client = bootstrapSupabaseClient();
+    if (!client || !currentUserProfile) return;
+
+    const { data: deposits } = await client.from('deposits').select('*').eq('user_id', currentUserProfile.id);
+    const { data: withdrawals } = await client.from('withdrawals').select('*').eq('user_id', currentUserProfile.id);
+
+    const feed = document.getElementById('user-transactions-feed');
+    if (!feed) return;
+
+    let html = '';
+    const allTxs = [
+        ...(deposits || []).map(d => ({ ...d, type: 'Deposit' })),
+        ...(withdrawals || []).map(w => ({ ...w, type: 'Withdrawal' }))
+    ].sort((a, b) => new Date(b.created_at || 0) - new Date(a.created_at || 0));
+
+    allTxs.forEach(tx => {
+        let statusColor = '#f39c12';
+        if (tx.status === 'approved') statusColor = '#28a745';
+        if (tx.status === 'rejected' || tx.status === 'failed') statusColor = '#dc3545';
+
+        html += `
+            <div class="tx-item">
+                <div>
+                    <strong>${tx.type}</strong><br>
+                    <small style="color:#666;">₦${(tx.amount || 0).toLocaleString()} - ${tx.proof || tx.bank_details || ''}</small>
+                </div>
+                <div>
+                    <span style="background:${statusColor}; color:white; padding:3px 8px; border-radius:10px; font-size:10px; font-weight:bold; text-transform:uppercase;">${tx.status}</span>
+                </div>
+            </div>
+        `;
+    });
+
+    feed.innerHTML = html || '<p style="color:#666;">No transaction history yet.</p>';
+}
+
+// Load Team Records & Referrals
+async function loadTeamRecords() {
+    const client = bootstrapSupabaseClient();
+    if (!client || !currentUserProfile) return;
+
+    const { data: referrals } = await client.from('profiles').select('maggi_id, total_investment, created_at').eq('referred_by', currentUserProfile.maggi_id);
+
+    const teamList = document.getElementById('team-records-list');
+    const teamCount = document.getElementById('team-count');
+
+    const refs = referrals || [];
+    if (teamCount) teamCount.innerText = refs.length;
+
+    if (!teamList) return;
+
+    if (refs.length === 0) {
+        teamList.innerHTML = '<p style="color:#666; font-size:13px;">No referrals yet. Share your referral link to build your team and earn 10% commission!</p>';
+        return;
+    }
+
+    teamList.innerHTML = refs.map(r => `
+        <div class="tx-item">
             <div>
-                <h2 style="margin:0; font-size:18px;">Maggi Finance</h2>
-                <small id="user-id-display">Maggi ID: Loading...</small>
+                <strong>Member ID:</strong> ${r.maggi_id}<br>
+                <small style="color:#666;">Joined: ${new Date(r.created_at).toLocaleDateString()}</small>
+            </div>
+            <div>
+                <span style="background:#28a745; color:white; padding:3px 8px; border-radius:10px; font-size:10px; font-weight:bold;">Active</span>
             </div>
         </div>
-        <button id="logout-btn" class="btn-danger hidden" style="width: auto; padding: 6px 12px; font-size: 12px;" onclick="handleLogout()">Logout</button>
-    </div>
+    `).join('');
+}
 
-    <div class="container" style="margin-bottom: 80px;">
-        <!-- Auth View -->
-        <div id="view-auth" class="card">
-            <h3>Welcome Bonus: ₦2,000</h3>
-            <input type="email" id="auth-email" placeholder="Enter Email Address">
-            <input type="password" id="auth-password" placeholder="Enter Password">
-            <button class="btn" id="btn-login">Login</button>
-            <button class="btn btn-secondary" id="btn-register" style="margin-top:8px;">Register Account</button>
-            <button class="btn" style="background: transparent; color: #555; margin-top: 8px; font-size: 14px; box-shadow: none;" onclick="handleForgotPassword()">Forgot Password?</button>
-        </div>
+// ADMIN DASHBOARD LOADER
+async function loadAdminDashboardData() {
+    const client = bootstrapSupabaseClient();
+    if (!client) return;
 
-        <!-- Dashboard View -->
-        <div id="view-dashboard" class="hidden">
-            <div class="card" style="padding: 0; overflow: hidden; border: none; margin-bottom: 15px;">
-                <img src="https://images.unsplash.com/photo-1559526324-4b87b5e36e44?auto=format&fit=crop&w=800&q=80" 
-                     alt="Maggi Finance Banner" 
-                     style="width: 100%; height: 150px; object-fit: cover; display: block;">
-            </div>
+    const { data: deposits } = await client.from('deposits').select('*');
+    const { data: withdrawals } = await client.from('withdrawals').select('*');
+    const { data: users } = await client.from('profiles').select('*');
 
-            <div class="card" style="background: linear-gradient(135deg, var(--primary), #b01507); color: white; border: none;">
-                <p style="margin:0;">Available Wallet Balance</p>
-                <h1 style="margin: 5px 0;" id="dash-balance">₦0.00</h1>
-                <small id="dash-investment">Active Investments: ₦0.00</small>
-            </div>
-            
-            <div class="card">
-                <h3>Quick Actions</h3>
-                <button class="btn" onclick="switchView('view-investment')" style="margin-bottom: 8px;">View Plans (15% Daily)</button>
-                <button class="btn btn-secondary" onclick="switchView('view-wallet')" style="margin-bottom: 8px;">Deposit & Bank Withdrawal</button>
-                <button class="btn" style="background: var(--accent); color: var(--dark);" onclick="switchView('view-team')">My Referral Network & Team</button>
-            </div>
-        </div>
+    const pendingWd = (withdrawals || []).filter(w => w.status === 'pending');
+    const pendingDep = (deposits || []).filter(d => d.status === 'pending');
 
-        <!-- Investment View -->
-        <div id="view-investment" class="hidden">
-            <h3>Maggi Fixed Income Tiers</h3>
-            <p><small>*All open plans earn 15% daily yield payouts for 20 days.</small></p>
-            <div class="tier-grid" id="tiers-container"></div>
-        </div>
+    const totalCount = pendingWd.length + pendingDep.length;
+    document.getElementById('alert-count').innerText = totalCount;
+    document.getElementById('review-count').innerText = totalCount;
 
-        <!-- Wallet View -->
-        <div id="view-wallet" class="hidden">
-            <div class="card">
-                <h3>Fund Your Wallet (Deposit)</h3>
-                <p>Transfer funds to the official company account below:</p>
-                <div class="copy-box">
-                    <div>
-                        <strong>Bank:</strong> OPAY<br>
-                        <strong>Account No:</strong> <span id="company-acct">6141619370</span><br>
-                        <strong>Account Name:</strong> OLALEKAN OLUWOLE OGUNSOLA
-                    </div>
-                    <button class="btn" style="width: auto; padding: 6px 12px; font-size: 12px;" onclick="copyCompanyAccount()">Copy</button>
-                </div>
-                <input type="number" id="deposit-amount" placeholder="Enter Amount Paid (e.g., 10000)">
-                <input type="text" id="deposit-proof" placeholder="Your Bank Name / Teller Reference">
-                <button class="btn-success btn" style="margin-top: 5px;" onclick="submitDepositRequest()">I Have Made The Payment</button>
-            </div>
+    const alertsList = document.getElementById('alerts-list');
+    let alertHtml = '';
 
-            <div class="card">
-                <h3>Bank Account & Withdrawal</h3>
-                <p>Minimum Payout: <strong>₦2,000</strong> (Requires Active Investment)</p>
-                
-                <input type="text" id="bank-name" placeholder="Bank Name (e.g. OPay, Access)">
-                <input type="text" id="account-number" placeholder="Account Number">
-                <input type="text" id="account-name" placeholder="Account Name">
-                <button class="btn-secondary btn" style="margin-bottom: 10px;" onclick="saveUserBankAccount()">Save Bank Details</button>
-
-                <input type="number" id="withdraw-amount" placeholder="Enter Amount to Withdraw">
-                <button class="btn" onclick="submitWithdrawalRequest()">Request Payout</button>
-            </div>
-
-            <div class="card">
-                <h3>Transaction History</h3>
-                <div id="user-transactions-feed"><p style="color:#666;">Loading transactions...</p></div>
-            </div>
-        </div>
-
-        <!-- Team & Referral Network View -->
-        <div id="view-team" class="hidden">
-            <div class="card">
-                <h3>Referral Commission & Network</h3>
-                <p>Earn a generous <strong>10% commission</strong> when your direct referrals fund or invest in plans!</p>
-                <div class="copy-box">
-                    <span id="referral-link-box" style="font-size:11px;">Loading Link...</span>
-                    <button class="btn" style="width: auto; padding: 6px 12px; font-size: 12px;" onclick="copyReferralLink()">Copy</button>
+    pendingWd.forEach(w => {
+        alertHtml += `
+            <div class="alert-card">
+                <span class="alert-badge">WITHDRAWAL REQUEST</span>
+                <div class="alert-title">${w.maggi_id || 'User'} requested payout</div>
+                <div class="alert-desc">Details: ${w.bank_details || 'Bank account info attached'}</div>
+                <div class="alert-amount">₦${(w.amount || 0).toLocaleString()}</div>
+                <div style="display:flex; gap:8px; margin-top:8px;">
+                    <button class="btn-success btn" style="padding:6px; font-size:12px;" onclick="approveWithdrawal('${w.id}', '${w.user_id}', ${w.amount})">Approve</button>
+                    <button class="btn-danger btn" style="padding:6px; font-size:12px;" onclick="rejectWithdrawal('${w.id}')">Reject / Failed</button>
                 </div>
             </div>
+        `;
+    });
 
-            <div class="card">
-                <h3>Your Team Records (<span id="team-count">0</span> Members)</h3>
-                <div id="team-records-list"><p style="color:#666;">Loading team members...</p></div>
-            </div>
-        </div>
-
-        <!-- Gift View -->
-        <div id="view-gift" class="hidden">
-            <div class="card">
-                <h3>Redeem Special Gift Code</h3>
-                <input type="text" id="gift-code-input" placeholder="Enter Admin Gift Code">
-                <button class="btn" onclick="redeemGiftCode()">Claim Voucher</button>
-            </div>
-        </div>
-
-        <!-- Admin Control Hub -->
-        <div id="view-admin" class="hidden">
-            <div class="admin-theme">
-                <div class="admin-nav">
-                    <button class="admin-nav-btn active" id="tab-btn-alerts" onclick="switchAdminTab('alerts')">Alerts (<span id="alert-count">0</span>)</button>
-                    <button class="admin-nav-btn" id="tab-btn-review" onclick="switchAdminTab('review')">Review (<span id="review-count">0</span>)</button>
-                    <button class="admin-nav-btn" id="tab-btn-users" onclick="switchAdminTab('users')">Users</button>
-                    <button class="admin-nav-btn" id="tab-btn-gift" onclick="switchAdminTab('gift')">Gift Code</button>
-                </div>
-
-                <div id="admin-sub-alerts">
-                    <div id="alerts-list"><p style="color:#aaa;">Loading alerts...</p></div>
-                </div>
-
-                <div id="admin-sub-review" class="hidden">
-                    <h4 style="color:var(--accent);">Pending Deposits</h4>
-                    <div id="review-deposits-list"></div>
-                    <h4 style="color:var(--accent); margin-top:15px;">Pending Withdrawals</h4>
-                    <div id="review-withdrawals-list"></div>
-                </div>
-
-                <div id="admin-sub-users" class="hidden">
-                    <h4 style="color:#fff;">Registered Platform Users</h4>
-                    <div id="users-table-container"></div>
-                </div>
-
-                <div id="admin-sub-gift" class="hidden">
-                    <h4 style="color:#fff;">Generate Promotional Gift Code</h4>
-                    <input type="text" id="admin-code" placeholder="Code String (e.g. MAGGI500)">
-                    <input type="number" id="admin-amount" placeholder="Naira Value (e.g. 1000)">
-                    <input type="number" id="admin-qty" placeholder="Total Claims Allowed">
-                    <button class="btn" style="margin-top:8px;" onclick="createAdminGiftCode()">Issue Gift Code</button>
+    pendingDep.forEach(d => {
+        alertHtml += `
+            <div class="alert-card">
+                <span class="alert-badge" style="color:#28a745;">DEPOSIT PROOF</span>
+                <div class="alert-title">${d.maggi_id || 'User'} deposited funds</div>
+                <div class="alert-desc">Proof: ${d.proof}</div>
+                <div class="alert-amount">₦${(d.amount || 0).toLocaleString()}</div>
+                <div style="display:flex; gap:8px; margin-top:8px;">
+                    <button class="btn-success btn" style="padding:6px; font-size:12px;" onclick="approveDeposit('${d.id}', '${d.user_id}', ${d.amount}, '${d.maggi_id}')">Confirm & Credit</button>
+                    <button class="btn-danger btn" style="padding:6px; font-size:12px;" onclick="rejectDeposit('${d.id}')">Reject / Failed</button>
                 </div>
             </div>
-        </div>
-    </div>
+        `;
+    });
 
-    <!-- Navigation -->
-    <div id="app-nav" class="nav-tabs hidden">
-        <div onclick="switchView('view-dashboard')" class="active">Dash</div>
-        <div onclick="switchView('view-investment')">Plans</div>
-        <div onclick="switchView('view-wallet')">Wallet</div>
-        <div onclick="switchView('view-team')">Team</div>
-        <div onclick="switchView('view-gift')">Voucher</div>
-        <div onclick="switchView('view-admin')" id="admin-nav-tab" class="hidden">Admin</div>
-    </div>
+    alertsList.innerHTML = alertHtml || '<p style="color:#aaa;">No pending alerts at the moment.</p>';
 
-    <!-- Scripts -->
-    <script src="app.js"></script>
-    <script>
-        document.getElementById('btn-login').addEventListener('click', function() {
-            if(typeof handleAuth === 'function') { handleAuth('login'); } else { alert("App logic loading, please wait..."); }
-        });
-        document.getElementById('btn-register').addEventListener('click', function() {
-            if(typeof handleAuth === 'function') { handleAuth('register'); } else { alert("App logic loading, please wait..."); }
-        });
-    </script>
-</body>
-</html>
+    const reviewDepList = document.getElementById('review-deposits-list');
+    const reviewWdList = document.getElementById('review-withdrawals-list');
+
+    if (reviewDepList) {
+        reviewDepList.innerHTML = pendingDep.length === 0 ? '<p style="color:#aaa;">No pending deposits.</p>' :
+            pendingDep.map(d => `<div style="background:#252525; padding:10px; margin-bottom:8px; border-radius:8px; color:#fff;">
+                <strong>User:</strong> ${d.maggi_id} | <strong>Amount:</strong> ₦${d.amount.toLocaleString()}<br>
+                <strong>Proof:</strong> ${d.proof}<br>
+                <div style="display:flex; gap:6px; margin-top:5px;">
+                    <button class="btn-success btn" style="padding:4px 8px; font-size:12px; width:auto;" onclick="approveDeposit('${d.id}', '${d.user_id}', ${d.amount}, '${d.maggi_id}')">Approve</button>
+                    <button class="btn-danger btn" style="padding:4px 8px; font-size:12px; width:auto;" onclick="rejectDeposit('${d.id}')">Reject</button>
+                </div>
+            </div>`).join('');
+    }
+
+    if (reviewWdList) {
+        reviewWdList.innerHTML = pendingWd.length === 0 ? '<p style="color:#aaa;">No pending withdrawals.</p>' :
+            pendingWd.map(w => `<div style="background:#252525; padding:10px; margin-bottom:8px; border-radius:8px; color:#fff;">
+                <strong>User:</strong> ${w.maggi_id} | <strong>Amount:</strong> ₦${w.amount.toLocaleString()}<br>
+                <strong>Bank:</strong> ${w.bank_details}<br>
+                <div style="display:flex; gap:6px; margin-top:5px;">
+                    <button class="btn-success btn" style="padding:4px 8px; font-size:12px; width:auto;" onclick="approveWithdrawal('${w.id}', '${w.user_id}', ${w.amount})">Approve</button>
+                    <button class="btn-danger btn" style="padding:4px 8px; font-size:12px; width:auto;" onclick="rejectWithdrawal('${w.id}')">Reject</button>
+                </div>
+            </div>`).join('');
+    }
+
+    const usersContainer = document.getElementById('users-table-container');
+    if (usersContainer && users) {
+        usersContainer.innerHTML = `<table class="admin-table"><tr><th>Maggi ID</th><th>Balance</th><th>Investment</th></tr>` +
+            users.map(u => `<tr><td>${u.maggi_id || 'N/A'}</td><td>₦${(u.wallet_balance||0).toLocaleString()}</td><td>₦${(u.total_investment||0).toLocaleString()}</td></tr>`).join('') + `</table>`;
+    }
+}
+
+async function approveDeposit(depositId, userId, amount, maggiId) {
+    const client = bootstrapSupabaseClient();
+    const { data: target } = await client.from('profiles').select('*').eq('id', userId).single();
+    if (!target) return alert("User profile not found.");
+
+    await client.from('profiles').update({ wallet_balance: (target.wallet_balance || 0) + amount }).eq('id', userId);
+    await client.from('deposits').update({ status: 'approved' }).eq('id', depositId);
+
+    // Give 10% referral commission if referred by someone
+    if (target.referred_by) {
+        const { data: referrer } = await client.from('profiles').select('*').eq('maggi_id', target.referred_by).single();
+        if (referrer) {
+            const commission = amount * 0.10;
+            await client.from('profiles').update({ wallet_balance: (referrer.wallet_balance || 0) + commission }).eq('id', referrer.id);
+        }
+    }
+
+    alert("Deposit Approved, Wallet Credited & Referral Commission Triggered!");
+    loadAdminDashboardData();
+}
+
+async function rejectDeposit(depositId) {
+    const client = bootstrapSupabaseClient();
+    await client.from('deposits').update({ status: 'rejected' }).eq('id', depositId);
+    alert("Deposit marked as Rejected/Failed!");
+    loadAdminDashboardData();
+}
+
+async function approveWithdrawal(withdrawalId, userId, amount) {
+    const client = bootstrapSupabaseClient();
+    const { data: target } = await client.from('profiles').select('wallet_balance').eq('id', userId).single();
+    if (!target) return alert("User profile not found.");
+
+    if (target.wallet_balance < amount) return alert("User has insufficient balance.");
+
+    await client.from('profiles').update({ wallet_balance: (target.wallet_balance || 0) - amount }).eq('id', userId);
+    await client.from('withdrawals').update({ status: 'approved' }).eq('id', withdrawalId);
+    alert("Withdrawal Approved!");
+    loadAdminDashboardData();
+}
+
+async function rejectWithdrawal(withdrawalId) {
+    const client = bootstrapSupabaseClient();
+    await client.from('withdrawals').update({ status: 'rejected' }).eq('id', withdrawalId);
+    alert("Withdrawal marked as Rejected/Failed!");
+    loadAdminDashboardData();
+}
+
+async function createAdminGiftCode() {
+    const client = bootstrapSupabaseClient();
+    const code = document.getElementById('admin-code').value.trim();
+    const amount = parseFloat(document.getElementById('admin-amount').value);
+    const qty = parseInt(document.getElementById('admin-qty').value);
+
+    if (!code || !amount || !qty) return alert("Please fill code, amount, and quantity.");
+
+    const { error } = await client.from('vouchers').insert([{ code, amount, claims_left: qty }]);
+    if (error) return alert("Gift Code creation error: " + error.message);
+
+    alert(`Gift code ${code} issued successfully!`);
+}
+
+async function redeemGiftCode() {
+    const client = bootstrapSupabaseClient();
+    const inputCode = document.getElementById('gift-code-input').value.trim();
+
+    if (!inputCode) return alert("Please enter gift code.");
+
+    const { data: voucher } = await client.from('vouchers').select('*').eq('code', inputCode).single();
+
+    if (!voucher || voucher.claims_left <= 0) return alert("Invalid or expired gift code.");
+
+    await client.from('profiles').update({ wallet_balance: currentUserProfile.wallet_balance + voucher.amount }).eq('id', currentUserProfile.id);
+    await client.from('vouchers').update({ claims_left: voucher.claims_left - 1 }).eq('id', voucher.id);
+
+    alert(`Voucher claimed! ₦${voucher.amount.toLocaleString()} added to your balance.`);
+    await loadUserData({ id: currentUserProfile.id });
+}
+
+document.addEventListener('DOMContentLoaded', async () => {
+    const client = bootstrapSupabaseClient();
+    if (client) {
+        const { data: { session } } = await client.auth.getSession();
+        if (session && session.user) {
+            await loadUserData(session.user);
+        } else {
+            document.getElementById('user-id-display').innerText = "Maggi ID: Guest";
+        }
+    }
+});
