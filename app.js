@@ -15,12 +15,10 @@ function bootstrapSupabaseClient() {
     return null;
 }
 
-// Generate unique custom Platform IDs
 function generateMaggiId() {
     return "MG-" + Math.floor(100000 + Math.random() * 900000);
 }
 
-// Global UI Navigation Controller
 function switchView(viewId) {
     const views = ['view-auth', 'view-dashboard', 'view-investment', 'view-wallet', 'view-team', 'view-gift', 'view-admin'];
     views.forEach(id => {
@@ -35,26 +33,35 @@ function switchView(viewId) {
     navTabs.forEach(tab => tab.classList.remove('active'));
 
     if (viewId === 'view-admin' && currentUserProfile && currentUserProfile.is_admin) {
-        loadAdminLedgers();
+        loadAdminDashboardData();
     }
 }
 
-// Registration and Login Auth Flow
+// Admin Sub-Tab Switcher
+function switchAdminTab(tabName) {
+    const subTabs = ['alerts', 'review', 'users', 'gift'];
+    subTabs.forEach(t => {
+        const panel = document.getElementById(`admin-sub-${t}`);
+        const btn = document.getElementById(`tab-btn-${t}`);
+        if (panel) panel.classList.add('hidden');
+        if (btn) btn.classList.remove('active');
+    });
+
+    const activePanel = document.getElementById(`admin-sub-${tabName}`);
+    const activeBtn = document.getElementById(`tab-btn-${tabName}`);
+    if (activePanel) activePanel.classList.remove('hidden');
+    if (activeBtn) activeBtn.classList.add('active');
+}
+
+// Authentication
 async function handleAuth(type) {
     const client = bootstrapSupabaseClient();
-    if (!client) {
-        return alert("Supabase database connection is initializing. Please wait 2 seconds and try again.");
-    }
+    if (!client) return alert("Database initializing. Please try again.");
 
-    const emailInput = document.getElementById('auth-email');
-    const passwordInput = document.getElementById('auth-password');
+    const email = document.getElementById('auth-email').value.trim().toLowerCase();
+    const password = document.getElementById('auth-password').value;
 
-    const email = emailInput ? emailInput.value.trim().toLowerCase() : '';
-    const password = passwordInput ? passwordInput.value : '';
-
-    if (!email || !password) {
-        return alert("Please fill standard input parameters.");
-    }
+    if (!email || !password) return alert("Please enter email and password.");
 
     const isAdmin = (email === 'omoopeola1@gmail.com');
 
@@ -64,13 +71,11 @@ async function handleAuth(type) {
 
         const maggiId = generateMaggiId();
         if (data.user) {
-            const { error: profileError } = await client.from('profiles').insert([
-                { id: data.user.id, maggi_id: maggiId, wallet_balance: 2000, total_investment: 0, is_admin: isAdmin }
+            await client.from('profiles').insert([
+                { id: data.user.id, maggi_id: maggiId, wallet_balance: 2000, total_investment: 0, is_admin: isAdmin, email: email }
             ]);
-            if (profileError) console.error("Profile Error:", profileError);
         }
-
-        alert("Registration complete! Enjoy your ₦2,000 sign up reward.");
+        alert("Registration complete! Welcome Bonus ₦2,000 credited.");
         await loadUserData(data.user);
     } else if (type === 'login') {
         const { data: logData, error: logError } = await client.auth.signInWithPassword({ email, password });
@@ -79,86 +84,56 @@ async function handleAuth(type) {
         if (isAdmin) {
             await client.from('profiles').update({ is_admin: true }).eq('id', logData.user.id);
         }
-
         alert("Login successful!");
         await loadUserData(logData.user);
     }
 }
 
-// Forgot Password Handler
 async function handleForgotPassword() {
     const client = bootstrapSupabaseClient();
-    if (!client) return alert("Supabase is still connecting. Please wait a moment.");
-
-    const emailInput = document.getElementById('auth-email');
-    const email = emailInput ? emailInput.value.trim() : '';
-
-    if (!email) {
-        return alert("Please enter your email address in the email field above first, then click 'Forgot Password?'.");
-    }
-
-    const { error } = await client.auth.resetPasswordForEmail(email, {
-        redirectTo: window.location.origin
-    });
-
+    const email = document.getElementById('auth-email').value.trim();
+    if (!email) return alert("Please enter your email address above.");
+    const { error } = await client.auth.resetPasswordForEmail(email, { redirectTo: window.location.origin });
     if (error) return alert(error.message);
-    alert("Password reset link has been sent to your email address. Please check your inbox.");
+    alert("Password reset email sent!");
 }
 
-// Load logged-in user details & update UI
+// Load User Profile Data
 async function loadUserData(user) {
     const client = bootstrapSupabaseClient();
     if (!client || !user) return;
 
-    const { data: profile, error } = await client.from('profiles').select('*').eq('id', user.id).single();
+    const { data: profile } = await client.from('profiles').select('*').eq('id', user.id).single();
     
     if (profile) {
         currentUserProfile = profile;
         
-        const idDisplay = document.getElementById('user-id-display');
-        if (idDisplay) idDisplay.innerText = "Maggi ID: " + (profile.maggi_id || 'N/A');
+        document.getElementById('user-id-display').innerText = "Maggi ID: " + (profile.maggi_id || 'N/A');
+        document.getElementById('dash-balance').innerText = "₦" + (profile.wallet_balance || 0).toLocaleString();
+        document.getElementById('dash-investment').innerText = "Active Investments: ₦" + (profile.total_investment || 0).toLocaleString();
 
-        const dashBalance = document.getElementById('dash-balance');
-        if (dashBalance) dashBalance.innerText = "₦" + (profile.wallet_balance || 0).toLocaleString();
-
-        const dashInvest = document.getElementById('dash-investment');
-        if (dashInvest) dashInvest.innerText = "Active Investments: ₦" + (profile.total_investment || 0).toLocaleString();
-
-        // Populate Saved Bank Details if present
         if (profile.bank_name) document.getElementById('bank-name').value = profile.bank_name;
         if (profile.account_number) document.getElementById('account-number').value = profile.account_number;
         if (profile.account_name) document.getElementById('account-name').value = profile.account_name;
 
-        // Populate Referral Link Box
-        const refBox = document.getElementById('referral-link-box');
-        if (refBox) {
-            refBox.innerText = `https://maggi-finance.onrender.com/?ref=${profile.maggi_id}`;
-        }
+        document.getElementById('referral-link-box').innerText = `https://maggi-finance.onrender.com/?ref=${profile.maggi_id}`;
 
         renderInvestmentTiers();
 
-        const appNav = document.getElementById('app-nav');
-        if (appNav) appNav.classList.remove('hidden');
+        document.getElementById('app-nav').classList.remove('hidden');
 
         if (profile.is_admin || user.email === 'omoopeola1@gmail.com') {
-            const adminTab = document.getElementById('admin-nav-tab');
-            if (adminTab) adminTab.classList.remove('hidden');
+            document.getElementById('admin-nav-tab').classList.remove('hidden');
         }
 
         switchView('view-dashboard');
     }
 }
 
-// Render the 10 Investment Plans (Scaling & 15% Daily Yield)
+// Render Tiered Investment Plans
 function renderInvestmentTiers() {
     const container = document.getElementById('tiers-container');
     if (!container) return;
-
-    const planImages = [
-        "https://cdn-icons-png.flaticon.com/512/3135/3135706.png",
-        "https://cdn-icons-png.flaticon.com/512/2489/2489756.png",
-        "https://cdn-icons-png.flaticon.com/512/2953/2953361.png"
-    ];
 
     const plans = [];
     let price = 6000;
@@ -170,12 +145,11 @@ function renderInvestmentTiers() {
             totalReturn: (price * 0.15) * 20,
             isOpen: i <= 3 
         });
-        price *= 2; // Each plan scales x2 (6000, 12000, 24000...)
+        price *= 2;
     }
 
     container.innerHTML = plans.map(p => `
         <div class="tier-box" style="border: 1px solid ${p.isOpen ? 'var(--accent)' : '#ccc'}; background: ${p.isOpen ? '#fffde6' : '#f1f1f1'};">
-            <img src="${planImages[p.tier - 1] || 'https://cdn-icons-png.flaticon.com/512/3135/3135706.png'}" alt="Badge" style="width: 40px; height: 40px; margin-bottom: 5px;">
             <h4 style="margin: 0 0 5px 0; color: var(--primary);">Tier ${p.tier}</h4>
             <p style="margin: 4px 0; font-weight: bold; font-size: 15px;">₦${p.price.toLocaleString()}</p>
             <p style="margin: 2px 0; font-size: 11px;">Daily: ₦${p.dailyReturn.toLocaleString()} (15%)</p>
@@ -189,199 +163,185 @@ function renderInvestmentTiers() {
     `).join('');
 }
 
-// Invest in a Plan function
 async function investInPlan(amount) {
     const client = bootstrapSupabaseClient();
     if (!client || !currentUserProfile) return;
 
-    if (currentUserProfile.wallet_balance < amount) {
-        return alert("Insufficient wallet balance! Please make a deposit first.");
-    }
+    if (currentUserProfile.wallet_balance < amount) return alert("Insufficient wallet balance!");
 
     const newBalance = currentUserProfile.wallet_balance - amount;
     const newInvestment = (currentUserProfile.total_investment || 0) + amount;
 
-    const { error } = await client.from('profiles').update({
-        wallet_balance: newBalance,
-        total_investment: newInvestment
-    }).eq('id', currentUserProfile.id);
-
-    if (error) return alert("Investment failed: " + error.message);
-
-    alert(`Successfully invested ₦${amount.toLocaleString()}! Daily income will start dropping in 24 hours.`);
+    await client.from('profiles').update({ wallet_balance: newBalance, total_investment: newInvestment }).eq('id', currentUserProfile.id);
+    alert(`Successfully invested ₦${amount.toLocaleString()}!`);
     await loadUserData({ id: currentUserProfile.id });
 }
 
-// Copy Company Account Number (One-Tap)
 function copyCompanyAccount() {
     navigator.clipboard.writeText("6141619370");
-    alert("Company OPay Account Number copied to clipboard!");
+    alert("Copied OPay Account: 6141619370!");
 }
 
-// Copy Referral Link (One-Tap)
 function copyReferralLink() {
-    const refText = document.getElementById('referral-link-box').innerText;
-    navigator.clipboard.writeText(refText);
-    alert("Referral link copied to clipboard!");
+    navigator.clipboard.writeText(document.getElementById('referral-link-box').innerText);
+    alert("Referral link copied!");
 }
 
-// Submit Deposit Request ("I have made the payment")
 async function submitDepositRequest() {
     const client = bootstrapSupabaseClient();
-    if (!client || !currentUserProfile) return;
+    const amount = parseFloat(document.getElementById('deposit-amount').value);
+    const proof = document.getElementById('deposit-proof').value.trim();
 
-    const amountInput = document.getElementById('deposit-amount');
-    const proofInput = document.getElementById('deposit-proof');
+    if (!amount || !proof) return alert("Please fill amount and proof reference.");
 
-    const amount = parseFloat(amountInput.value);
-    const proof = proofInput.value.trim();
-
-    if (!amount || amount <= 0 || !proof) {
-        return alert("Please enter the deposit amount and your bank reference/proof.");
-    }
-
-    const { error } = await client.from('deposits').insert([
+    await client.from('deposits').insert([
         { user_id: currentUserProfile.id, maggi_id: currentUserProfile.maggi_id, amount: amount, proof: proof, status: 'pending' }
     ]);
-
-    if (error) return alert("Deposit submission error: " + error.message);
-
-    alert("Deposit notification submitted successfully! Awaiting admin approval.");
-    amountInput.value = '';
-    proofInput.value = '';
+    alert("Deposit submitted! Awaiting admin review.");
 }
 
-// Save User Bank Details
 async function saveUserBankAccount() {
     const client = bootstrapSupabaseClient();
-    if (!client || !currentUserProfile) return;
-
     const bankName = document.getElementById('bank-name').value.trim();
     const accountNumber = document.getElementById('account-number').value.trim();
     const accountName = document.getElementById('account-name').value.trim();
 
-    if (!bankName || !accountNumber || !accountName) {
-        return alert("Please fill out all bank details.");
-    }
+    if (!bankName || !accountNumber || !accountName) return alert("Please fill all bank fields.");
 
-    const { error } = await client.from('profiles').update({
-        bank_name: bankName,
-        account_number: accountNumber,
-        account_name: accountName
-    }).eq('id', currentUserProfile.id);
-
-    if (error) return alert("Error saving bank details: " + error.message);
-    alert("Bank account details saved successfully!");
-    await loadUserData({ id: currentUserProfile.id });
+    await client.from('profiles').update({ bank_name: bankName, account_number: accountNumber, account_name: accountName }).eq('id', currentUserProfile.id);
+    alert("Bank account saved!");
 }
 
-// Submit Withdrawal Request
 async function submitWithdrawalRequest() {
     const client = bootstrapSupabaseClient();
-    if (!client || !currentUserProfile) return;
+    if (!currentUserProfile.total_investment || currentUserProfile.total_investment <= 0) return alert("Active investment required to withdraw!");
 
-    if (!currentUserProfile.total_investment || currentUserProfile.total_investment <= 0) {
-        return alert("You must have an active investment to make a withdrawal!");
-    }
+    const amount = parseFloat(document.getElementById('withdraw-amount').value);
+    if (amount < 2000) return alert("Minimum withdrawal is ₦2,000.");
+    if (currentUserProfile.wallet_balance < amount) return alert("Insufficient balance.");
 
-    const amountInput = document.getElementById('withdraw-amount');
-    const amount = parseFloat(amountInput.value);
-
-    if (amount < 2000) {
-        return alert("Minimum payout threshold is ₦2,000.");
-    }
-
-    if (!currentUserProfile.bank_number) {
-        return alert("Please save your bank account details above first before requesting a withdrawal.");
-    }
-
-    if (currentUserProfile.wallet_balance < amount) {
-        return alert("Requested withdrawal amount exceeds your available wallet balance.");
-    }
-
-    const { error } = await client.from('withdrawals').insert([
+    await client.from('withdrawals').insert([
         { 
             user_id: currentUserProfile.id, 
             maggi_id: currentUserProfile.maggi_id, 
             amount: amount, 
-            bank_details: `${currentUserProfile.bank_name} - ${currentUserProfile.account_number} (${currentUserProfile.account_name})`,
+            bank_details: `${document.getElementById('bank-name').value} - ${document.getElementById('account-number').value}`,
             status: 'pending' 
         }
     ]);
-
-    if (error) return alert("Withdrawal error: " + error.message);
-
-    alert(`Withdrawal request of ₦${amount.toLocaleString()} submitted successfully! Awaiting admin approval.`);
-    amountInput.value = '';
+    alert("Withdrawal submitted! Awaiting admin review.");
 }
 
-// Admin Hub: Load Pending Deposits & Withdrawals
-async function loadAdminLedgers() {
+// ADMIN DASHBOARD DATA LOADER (Alerts, Reviews, Users, Gift Codes)
+async function loadAdminDashboardData() {
     const client = bootstrapSupabaseClient();
     if (!client || !currentUserProfile || !currentUserProfile.is_admin) return;
 
-    // Load Deposits
+    // Fetch Deposits & Withdrawals
     const { data: deposits } = await client.from('deposits').select('*').eq('status', 'pending');
-    const depContainer = document.getElementById('admin-deposits-container');
-    if (depContainer) {
-        if (!deposits || deposits.length === 0) {
-            depContainer.innerHTML = "<p>No pending deposits.</p>";
-        } else {
-            depContainer.innerHTML = `<table class="admin-table"><tr><th>User ID</th><th>Amount</th><th>Proof</th><th>Action</th></tr>` +
-                deposits.map(d => `<tr><td>${d.maggi_id}</td><td>₦${d.amount.toLocaleString()}</td><td>${d.proof}</td><td><button class="btn-success" onclick="approveDeposit('${d.id}', '${d.user_id}', ${d.amount})">Approve</button></td></tr>`).join('') + `</table>`;
-        }
-    }
-
-    // Load Withdrawals
     const { data: withdrawals } = await client.from('withdrawals').select('*').eq('status', 'pending');
-    const wdContainer = document.getElementById('admin-withdrawals-container');
-    if (wdContainer) {
-        if (!withdrawals || withdrawals.length === 0) {
-            wdContainer.innerHTML = "<p>No pending withdrawals.</p>";
-        } else {
-            wdContainer.innerHTML = `<table class="admin-table"><tr><th>User ID</th><th>Amount</th><th>Bank Info</th><th>Action</th></tr>` +
-                withdrawals.map(w => `<tr><td>${w.maggi_id}</td><td>₦${w.amount.toLocaleString()}</td><td>${w.bank_details}</td><td><button class="btn-success" onclick="approveWithdrawal('${w.id}', '${w.user_id}', ${w.amount})">Approve</button> <button class="btn-danger" onclick="rejectWithdrawal('${w.id}')">Reject</button></td></tr>`).join('') + `</table>`;
-        }
+    const { data: users } = await client.from('profiles').select('*');
+
+    const pendingWd = withdrawals || [];
+    const pendingDep = deposits || [];
+
+    document.getElementById('alert-count').innerText = pendingWd.length + pendingDep.length;
+    document.getElementById('review-count').innerText = pendingWd.length + pendingDep.length;
+
+    // Render Alerts Card Style (Sample Image UI Match)
+    const alertsList = document.getElementById('alerts-list');
+    let alertHtml = '';
+
+    pendingWd.forEach(w => {
+        alertHtml += `
+            <div class="alert-card">
+                <span class="alert-badge">WITHDRAWAL REQUEST</span>
+                <div class="alert-title">${w.maggi_id} requested a payout</div>
+                <div class="alert-desc">${w.bank_details || 'Bank account info attached'}</div>
+                <div class="alert-amount">₦${w.amount.toLocaleString()}</div>
+                <button class="btn-outline" onclick="approveWithdrawal('${w.id}', '${w.user_id}', ${w.amount})">Approve Payout</button>
+            </div>
+        `;
+    });
+
+    pendingDep.forEach(d => {
+        alertHtml += `
+            <div class="alert-card">
+                <span class="alert-badge" style="color:#28a745;">DEPOSIT PROOF</span>
+                <div class="alert-title">${d.maggi_id} deposited funds</div>
+                <div class="alert-desc">Ref: ${d.proof}</div>
+                <div class="alert-amount">₦${d.amount.toLocaleString()}</div>
+                <button class="btn-outline" onclick="approveDeposit('${d.id}', '${d.user_id}', ${d.amount})">Confirm & Credit User</button>
+            </div>
+        `;
+    });
+
+    alertsList.innerHTML = alertHtml || '<p style="color:#aaa;">No new alerts.</p>';
+
+    // Render Users Table
+    const usersContainer = document.getElementById('users-table-container');
+    if (usersContainer && users) {
+        usersContainer.innerHTML = `<table class="admin-table"><tr><th>Maggi ID</th><th>Balance</th><th>Investment</th></tr>` +
+            users.map(u => `<tr><td>${u.maggi_id || 'N/A'}</td><td>₦${(u.wallet_balance||0).toLocaleString()}</td><td>₦${(u.total_investment||0).toLocaleString()}</td></tr>`).join('') + `</table>`;
     }
 }
 
-// Admin: Approve Deposit
+// Fast Admin Actions
 async function approveDeposit(depositId, userId, amount) {
     const client = bootstrapSupabaseClient();
-    const { data: targetUser } = await client.from('profiles').select('wallet_balance').eq('id', userId).single();
-    if (!targetUser) return;
+    const { data: target } = await client.from('profiles').select('wallet_balance').eq('id', userId).single();
+    if (!target) return;
 
-    await client.from('profiles').update({ wallet_balance: targetUser.wallet_balance + amount }).eq('id', userId);
+    await client.from('profiles').update({ wallet_balance: (target.wallet_balance || 0) + amount }).eq('id', userId);
     await client.from('deposits').update({ status: 'approved' }).eq('id', depositId);
-    alert("Deposit approved and wallet credited!");
-    loadAdminLedgers();
+    alert("Deposit Approved & Wallet Credited!");
+    loadAdminDashboardData();
 }
 
-// Admin: Approve Withdrawal
 async function approveWithdrawal(withdrawalId, userId, amount) {
     const client = bootstrapSupabaseClient();
-    const { data: targetUser } = await client.from('profiles').select('wallet_balance').eq('id', userId).single();
-    if (!targetUser) return;
+    const { data: target } = await client.from('profiles').select('wallet_balance').eq('id', userId).single();
+    if (!target) return;
 
-    if (targetUser.wallet_balance < amount) {
-        return alert("User does not have sufficient balance anymore.");
-    }
-
-    await client.from('profiles').update({ wallet_balance: targetUser.wallet_balance - amount }).eq('id', userId);
+    await client.from('profiles').update({ wallet_balance: (target.wallet_balance || 0) - amount }).eq('id', userId);
     await client.from('withdrawals').update({ status: 'approved' }).eq('id', withdrawalId);
-    alert("Withdrawal approved!");
-    loadAdminLedgers();
+    alert("Withdrawal Approved!");
+    loadAdminDashboardData();
 }
 
-// Admin: Reject Withdrawal
-async function rejectWithdrawal(withdrawalId) {
+// Generate Gift Code
+async function createAdminGiftCode() {
     const client = bootstrapSupabaseClient();
-    await client.from('withdrawals').update({ status: 'rejected' }).eq('id', withdrawalId);
-    alert("Withdrawal rejected.");
-    loadAdminLedgers();
+    const code = document.getElementById('admin-code').value.trim();
+    const amount = parseFloat(document.getElementById('admin-amount').value);
+    const qty = parseInt(document.getElementById('admin-qty').value);
+
+    if (!code || !amount || !qty) return alert("Please fill code, amount, and quantity.");
+
+    const { error } = await client.from('vouchers').insert([{ code, amount, claims_left: qty }]);
+    if (error) return alert("Gift Code creation error: " + error.message);
+
+    alert(`Gift code ${code} issued successfully!`);
 }
 
-// Check session on startup
+// Redeem Gift Code
+async function redeemGiftCode() {
+    const client = bootstrapSupabaseClient();
+    const inputCode = document.getElementById('gift-code-input').value.trim();
+
+    if (!inputCode) return alert("Please enter gift code.");
+
+    const { data: voucher } = await client.from('vouchers').select('*').eq('code', inputCode).single();
+
+    if (!voucher || voucher.claims_left <= 0) return alert("Invalid or expired gift code.");
+
+    await client.from('profiles').update({ wallet_balance: currentUserProfile.wallet_balance + voucher.amount }).eq('id', currentUserProfile.id);
+    await client.from('vouchers').update({ claims_left: voucher.claims_left - 1 }).eq('id', voucher.id);
+
+    alert(`Voucher claimed! ₦${voucher.amount.toLocaleString()} added to your balance.`);
+    await loadUserData({ id: currentUserProfile.id });
+}
+
 document.addEventListener('DOMContentLoaded', async () => {
     const client = bootstrapSupabaseClient();
     if (client) {
@@ -389,8 +349,7 @@ document.addEventListener('DOMContentLoaded', async () => {
         if (session && session.user) {
             await loadUserData(session.user);
         } else {
-            const idDisplay = document.getElementById('user-id-display');
-            if (idDisplay) idDisplay.innerText = "Maggi ID: Guest";
+            document.getElementById('user-id-display').innerText = "Maggi ID: Guest";
         }
     }
 });
