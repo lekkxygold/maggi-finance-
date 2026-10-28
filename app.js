@@ -68,14 +68,18 @@ function switchAdminTab(tabName) {
     }
 }
 
+// Fixed Authentication Engine
 async function handleAuth(type) {
     const client = bootstrapSupabaseClient();
-    if (!client) return alert("Database initializing. Please try again.");
+    if (!client) return alert("Database initializing. Please try again in 2 seconds.");
 
-    const email = document.getElementById('auth-email').value.trim().toLowerCase();
-    const password = document.getElementById('auth-password').value;
+    const emailInput = document.getElementById('auth-email');
+    const passwordInput = document.getElementById('auth-password');
 
-    if (!email || !password) return alert("Please enter email and password.");
+    const email = emailInput ? emailInput.value.trim().toLowerCase() : '';
+    const password = passwordInput ? passwordInput.value : '';
+
+    if (!email || !password) return alert("Please enter both email and password.");
 
     const isAdmin = (email === 'omoopeola1@gmail.com');
     const urlParams = new URLSearchParams(window.location.search);
@@ -83,13 +87,16 @@ async function handleAuth(type) {
 
     if (type === 'register') {
         const { data, error } = await client.auth.signUp({ email, password });
-        if (error) return alert(error.message);
+        if (error) return alert("Registration Error: " + error.message);
 
-        const maggiId = generateMaggiId();
-        if (data.user) {
-            await client.from('profiles').insert([
+        const user = data.user;
+        if (user) {
+            const maggiId = generateMaggiId();
+            
+            // Insert profile record directly
+            await client.from('profiles').upsert([
                 { 
-                    id: data.user.id, 
+                    id: user.id, 
                     maggi_id: maggiId, 
                     wallet_balance: 2000, 
                     total_investment: 0, 
@@ -98,16 +105,32 @@ async function handleAuth(type) {
                     referred_by: refCode 
                 }
             ]);
+
+            alert("Registration complete! Welcome Bonus ₦2,000 credited.");
+            
+            // Auto sign in immediately after registration
+            const { data: signData, error: signError } = await client.auth.signInWithPassword({ email, password });
+            if (signData && signData.user) {
+                await loadUserData(signData.user);
+            } else {
+                await loadUserData(user);
+            }
         }
-        alert("Registration complete! Welcome Bonus ₦2,000 credited.");
-        await loadUserData(data.user);
     } else if (type === 'login') {
         const { data: logData, error: logError } = await client.auth.signInWithPassword({ email, password });
-        if (logError) return alert(logError.message);
+        if (logError) {
+            if (logError.message.includes("Email not confirmed")) {
+                alert("Please disable 'Confirm email' in Supabase Authentication settings to log in immediately.");
+            } else {
+                alert("Login Error: " + logError.message);
+            }
+            return;
+        }
 
-        if (isAdmin) {
+        if (isAdmin && logData.user) {
             await client.from('profiles').update({ is_admin: true }).eq('id', logData.user.id);
         }
+        
         alert("Login successful!");
         await loadUserData(logData.user);
     }
@@ -130,7 +153,7 @@ async function handleForgotPassword() {
     const email = document.getElementById('auth-email').value.trim();
     if (!email) return alert("Please enter your email address above.");
     const { error } = await client.auth.resetPasswordForEmail(email, { redirectTo: window.location.origin });
-    if (error) return alert(error.message);
+    if (error) return alert("Reset Error: " + error.message);
     alert("Password reset email sent!");
 }
 
@@ -138,8 +161,18 @@ async function loadUserData(user) {
     const client = bootstrapSupabaseClient();
     if (!client || !user) return;
 
-    const { data: profile } = await client.from('profiles').select('*').eq('id', user.id).single();
+    let { data: profile } = await client.from('profiles').select('*').eq('id', user.id).single();
     
+    // Fallback profile creation if not found
+    if (!profile) {
+        const maggiId = generateMaggiId();
+        const isAdmin = (user.email === 'omoopeola1@gmail.com');
+        const { data: newProfile } = await client.from('profiles').insert([
+            { id: user.id, maggi_id: maggiId, wallet_balance: 2000, total_investment: 0, is_admin: isAdmin, email: user.email }
+        ]).select().single();
+        profile = newProfile;
+    }
+
     if (profile) {
         currentUserProfile = profile;
         
@@ -320,7 +353,6 @@ async function loadUserTransactions() {
     feed.innerHTML = html || '<p style="color:#666;">No transaction history yet.</p>';
 }
 
-// Load Team Records & Referrals
 async function loadTeamRecords() {
     const client = bootstrapSupabaseClient();
     if (!client || !currentUserProfile) return;
@@ -446,7 +478,6 @@ async function approveDeposit(depositId, userId, amount, maggiId) {
     await client.from('profiles').update({ wallet_balance: (target.wallet_balance || 0) + amount }).eq('id', userId);
     await client.from('deposits').update({ status: 'approved' }).eq('id', depositId);
 
-    // Give 10% referral commission if referred by someone
     if (target.referred_by) {
         const { data: referrer } = await client.from('profiles').select('*').eq('maggi_id', target.referred_by).single();
         if (referrer) {
