@@ -5,7 +5,6 @@ const SUPABASE_ANON_KEY = "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBh
 let dbClient = null;
 let currentUserProfile = null;
 
-// Safely initialize Supabase Client
 function bootstrapSupabaseClient() {
     if (dbClient) return dbClient;
     if (window.supabase && typeof window.supabase.createClient === 'function') {
@@ -37,7 +36,6 @@ function switchView(viewId) {
     }
 }
 
-// Admin Sub-Tab Switcher
 function switchAdminTab(tabName) {
     const subTabs = ['alerts', 'review', 'users', 'gift'];
     subTabs.forEach(t => {
@@ -51,9 +49,12 @@ function switchAdminTab(tabName) {
     const activeBtn = document.getElementById(`tab-btn-${tabName}`);
     if (activePanel) activePanel.classList.remove('hidden');
     if (activeBtn) activeBtn.classList.add('active');
+
+    if (tabName === 'review' || tabName === 'alerts') {
+        loadAdminDashboardData();
+    }
 }
 
-// Authentication
 async function handleAuth(type) {
     const client = bootstrapSupabaseClient();
     if (!client) return alert("Database initializing. Please try again.");
@@ -98,7 +99,6 @@ async function handleForgotPassword() {
     alert("Password reset email sent!");
 }
 
-// Load User Profile Data
 async function loadUserData(user) {
     const client = bootstrapSupabaseClient();
     if (!client || !user) return;
@@ -130,7 +130,6 @@ async function loadUserData(user) {
     }
 }
 
-// Render Tiered Investment Plans
 function renderInvestmentTiers() {
     const container = document.getElementById('tiers-container');
     if (!container) return;
@@ -194,10 +193,15 @@ async function submitDepositRequest() {
 
     if (!amount || !proof) return alert("Please fill amount and proof reference.");
 
-    await client.from('deposits').insert([
+    const { error } = await client.from('deposits').insert([
         { user_id: currentUserProfile.id, maggi_id: currentUserProfile.maggi_id, amount: amount, proof: proof, status: 'pending' }
     ]);
+
+    if (error) return alert("Deposit submission error: " + error.message);
+
     alert("Deposit submitted! Awaiting admin review.");
+    document.getElementById('deposit-amount').value = '';
+    document.getElementById('deposit-proof').value = '';
 }
 
 async function saveUserBankAccount() {
@@ -208,8 +212,11 @@ async function saveUserBankAccount() {
 
     if (!bankName || !accountNumber || !accountName) return alert("Please fill all bank fields.");
 
-    await client.from('profiles').update({ bank_name: bankName, account_number: accountNumber, account_name: accountName }).eq('id', currentUserProfile.id);
-    alert("Bank account saved!");
+    const { error } = await client.from('profiles').update({ bank_name: bankName, account_number: accountNumber, account_name: accountName }).eq('id', currentUserProfile.id);
+    if (error) return alert("Error saving bank account: " + error.message);
+
+    alert("Bank account saved successfully!");
+    await loadUserData({ id: currentUserProfile.id });
 }
 
 async function submitWithdrawalRequest() {
@@ -220,35 +227,45 @@ async function submitWithdrawalRequest() {
     if (amount < 2000) return alert("Minimum withdrawal is ₦2,000.");
     if (currentUserProfile.wallet_balance < amount) return alert("Insufficient balance.");
 
-    await client.from('withdrawals').insert([
+    const bankDetails = `${document.getElementById('bank-name').value} - ${document.getElementById('account-number').value} (${document.getElementById('account-name').value})`;
+
+    const { error } = await client.from('withdrawals').insert([
         { 
             user_id: currentUserProfile.id, 
             maggi_id: currentUserProfile.maggi_id, 
             amount: amount, 
-            bank_details: `${document.getElementById('bank-name').value} - ${document.getElementById('account-number').value}`,
+            bank_details: bankDetails,
             status: 'pending' 
         }
     ]);
+
+    if (error) return alert("Withdrawal error: " + error.message);
+
     alert("Withdrawal submitted! Awaiting admin review.");
+    document.getElementById('withdraw-amount').value = '';
 }
 
-// ADMIN DASHBOARD DATA LOADER (Alerts, Reviews, Users, Gift Codes)
+// ADMIN DASHBOARD LOADER
 async function loadAdminDashboardData() {
     const client = bootstrapSupabaseClient();
     if (!client || !currentUserProfile || !currentUserProfile.is_admin) return;
 
     // Fetch Deposits & Withdrawals
-    const { data: deposits } = await client.from('deposits').select('*').eq('status', 'pending');
-    const { data: withdrawals } = await client.from('withdrawals').select('*').eq('status', 'pending');
+    const { data: deposits, error: depErr } = await client.from('deposits').select('*').eq('status', 'pending');
+    const { data: withdrawals, error: wdErr } = await client.from('withdrawals').select('*').eq('status', 'pending');
     const { data: users } = await client.from('profiles').select('*');
+
+    if (depErr) console.error("Deposits Fetch Error:", depErr);
+    if (wdErr) console.error("Withdrawals Fetch Error:", wdErr);
 
     const pendingWd = withdrawals || [];
     const pendingDep = deposits || [];
 
-    document.getElementById('alert-count').innerText = pendingWd.length + pendingDep.length;
-    document.getElementById('review-count').innerText = pendingWd.length + pendingDep.length;
+    const totalCount = pendingWd.length + pendingDep.length;
+    document.getElementById('alert-count').innerText = totalCount;
+    document.getElementById('review-count').innerText = totalCount;
 
-    // Render Alerts Card Style (Sample Image UI Match)
+    // 1. Render Alerts Sub-Tab (Card View)
     const alertsList = document.getElementById('alerts-list');
     let alertHtml = '';
 
@@ -256,10 +273,13 @@ async function loadAdminDashboardData() {
         alertHtml += `
             <div class="alert-card">
                 <span class="alert-badge">WITHDRAWAL REQUEST</span>
-                <div class="alert-title">${w.maggi_id} requested a payout</div>
-                <div class="alert-desc">${w.bank_details || 'Bank account info attached'}</div>
+                <div class="alert-title">${w.maggi_id} requested payout</div>
+                <div class="alert-desc">Details: ${w.bank_details || 'Bank account info attached'}</div>
                 <div class="alert-amount">₦${w.amount.toLocaleString()}</div>
-                <button class="btn-outline" onclick="approveWithdrawal('${w.id}', '${w.user_id}', ${w.amount})">Approve Payout</button>
+                <div style="display:flex; gap:8px;">
+                    <button class="btn-success btn" style="padding:6px;" onclick="approveWithdrawal('${w.id}', '${w.user_id}', ${w.amount})">Approve</button>
+                    <button class="btn-danger btn" style="padding:6px;" onclick="rejectWithdrawal('${w.id}')">Reject</button>
+                </div>
             </div>
         `;
     });
@@ -269,16 +289,39 @@ async function loadAdminDashboardData() {
             <div class="alert-card">
                 <span class="alert-badge" style="color:#28a745;">DEPOSIT PROOF</span>
                 <div class="alert-title">${d.maggi_id} deposited funds</div>
-                <div class="alert-desc">Ref: ${d.proof}</div>
+                <div class="alert-desc">Proof: ${d.proof}</div>
                 <div class="alert-amount">₦${d.amount.toLocaleString()}</div>
-                <button class="btn-outline" onclick="approveDeposit('${d.id}', '${d.user_id}', ${d.amount})">Confirm & Credit User</button>
+                <button class="btn-success btn" style="padding:6px;" onclick="approveDeposit('${d.id}', '${d.user_id}', ${d.amount})">Confirm & Credit</button>
             </div>
         `;
     });
 
-    alertsList.innerHTML = alertHtml || '<p style="color:#aaa;">No new alerts.</p>';
+    alertsList.innerHTML = alertHtml || '<p style="color:#aaa;">No pending alerts at the moment.</p>';
 
-    // Render Users Table
+    // 2. Render Review Sub-Tab
+    const reviewDepList = document.getElementById('review-deposits-list');
+    const reviewWdList = document.getElementById('review-withdrawals-list');
+
+    if (reviewDepList) {
+        reviewDepList.innerHTML = pendingDep.length === 0 ? '<p style="color:#aaa;">No pending deposits.</p>' :
+            pendingDep.map(d => `<div style="background:#252525; padding:10px; margin-bottom:8px; border-radius:8px;">
+                <strong>User:</strong> ${d.maggi_id} | <strong>Amount:</strong> ₦${d.amount.toLocaleString()}<br>
+                <strong>Proof:</strong> ${d.proof}<br>
+                <button class="btn-success btn" style="padding:4px 8px; margin-top:5px; font-size:12px; width:auto;" onclick="approveDeposit('${d.id}', '${d.user_id}', ${d.amount})">Approve Deposit</button>
+            </div>`).join('');
+    }
+
+    if (reviewWdList) {
+        reviewWdList.innerHTML = pendingWd.length === 0 ? '<p style="color:#aaa;">No pending withdrawals.</p>' :
+            pendingWd.map(w => `<div style="background:#252525; padding:10px; margin-bottom:8px; border-radius:8px;">
+                <strong>User:</strong> ${w.maggi_id} | <strong>Amount:</strong> ₦${w.amount.toLocaleString()}<br>
+                <strong>Bank:</strong> ${w.bank_details}<br>
+                <button class="btn-success btn" style="padding:4px 8px; margin-top:5px; font-size:12px; width:auto;" onclick="approveWithdrawal('${w.id}', '${w.user_id}', ${w.amount})">Approve</button>
+                <button class="btn-danger btn" style="padding:4px 8px; margin-top:5px; font-size:12px; width:auto;" onclick="rejectWithdrawal('${w.id}')">Reject</button>
+            </div>`).join('');
+    }
+
+    // 3. Render Users Table
     const usersContainer = document.getElementById('users-table-container');
     if (usersContainer && users) {
         usersContainer.innerHTML = `<table class="admin-table"><tr><th>Maggi ID</th><th>Balance</th><th>Investment</th></tr>` +
@@ -286,7 +329,6 @@ async function loadAdminDashboardData() {
     }
 }
 
-// Fast Admin Actions
 async function approveDeposit(depositId, userId, amount) {
     const client = bootstrapSupabaseClient();
     const { data: target } = await client.from('profiles').select('wallet_balance').eq('id', userId).single();
@@ -309,7 +351,13 @@ async function approveWithdrawal(withdrawalId, userId, amount) {
     loadAdminDashboardData();
 }
 
-// Generate Gift Code
+async function rejectWithdrawal(withdrawalId) {
+    const client = bootstrapSupabaseClient();
+    await client.from('withdrawals').update({ status: 'rejected' }).eq('id', withdrawalId);
+    alert("Withdrawal Rejected!");
+    loadAdminDashboardData();
+}
+
 async function createAdminGiftCode() {
     const client = bootstrapSupabaseClient();
     const code = document.getElementById('admin-code').value.trim();
@@ -324,7 +372,6 @@ async function createAdminGiftCode() {
     alert(`Gift code ${code} issued successfully!`);
 }
 
-// Redeem Gift Code
 async function redeemGiftCode() {
     const client = bootstrapSupabaseClient();
     const inputCode = document.getElementById('gift-code-input').value.trim();
