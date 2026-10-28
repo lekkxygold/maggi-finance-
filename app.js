@@ -33,6 +33,10 @@ function switchView(viewId) {
 
     const navTabs = document.querySelectorAll('#app-nav div');
     navTabs.forEach(tab => tab.classList.remove('active'));
+
+    if (viewId === 'view-admin' && currentUserProfile && currentUserProfile.is_admin) {
+        loadAdminLedgers();
+    }
 }
 
 // Registration and Login Auth Flow
@@ -72,7 +76,6 @@ async function handleAuth(type) {
         const { data: logData, error: logError } = await client.auth.signInWithPassword({ email, password });
         if (logError) return alert(logError.message);
 
-        // Ensure admin status is synced if it's the admin email
         if (isAdmin) {
             await client.from('profiles').update({ is_admin: true }).eq('id', logData.user.id);
         }
@@ -98,10 +101,7 @@ async function handleForgotPassword() {
         redirectTo: window.location.origin
     });
 
-    if (error) {
-        return alert(error.message);
-    }
-
+    if (error) return alert(error.message);
     alert("Password reset link has been sent to your email address. Please check your inbox.");
 }
 
@@ -124,6 +124,12 @@ async function loadUserData(user) {
         const dashInvest = document.getElementById('dash-investment');
         if (dashInvest) dashInvest.innerText = "Active Investments: ₦" + (profile.total_investment || 0).toLocaleString();
 
+        // Populate Saved Bank Details if present
+        if (profile.bank_name) document.getElementById('bank-name').value = profile.bank_name;
+        if (profile.account_number) document.getElementById('account-number').value = profile.account_number;
+        if (profile.account_name) document.getElementById('account-name').value = profile.account_name;
+
+        // Populate Referral Link Box
         const refBox = document.getElementById('referral-link-box');
         if (refBox) {
             refBox.innerText = `https://maggi-finance.onrender.com/?ref=${profile.maggi_id}`;
@@ -134,7 +140,6 @@ async function loadUserData(user) {
         const appNav = document.getElementById('app-nav');
         if (appNav) appNav.classList.remove('hidden');
 
-        // Show Admin tab if user is admin
         if (profile.is_admin || user.email === 'omoopeola1@gmail.com') {
             const adminTab = document.getElementById('admin-nav-tab');
             if (adminTab) adminTab.classList.remove('hidden');
@@ -144,34 +149,41 @@ async function loadUserData(user) {
     }
 }
 
-// Render the 10 Investment Plans (First 3 Open, 7 Coming Soon)
+// Render the 10 Investment Plans (Scaling & 15% Daily Yield)
 function renderInvestmentTiers() {
     const container = document.getElementById('tiers-container');
     if (!container) return;
 
+    const planImages = [
+        "https://cdn-icons-png.flaticon.com/512/3135/3135706.png",
+        "https://cdn-icons-png.flaticon.com/512/2489/2489756.png",
+        "https://cdn-icons-png.flaticon.com/512/2953/2953361.png"
+    ];
+
     const plans = [];
-    let basePrice = 6000;
+    let price = 6000;
     for (let i = 1; i <= 10; i++) {
         plans.push({
             tier: i,
-            price: basePrice,
-            dailyReturn: basePrice * 0.10,
-            totalReturn: (basePrice * 0.10) * 20,
+            price: price,
+            dailyReturn: price * 0.15,
+            totalReturn: (price * 0.15) * 20,
             isOpen: i <= 3 
         });
-        basePrice += 4000;
+        price *= 2; // Each plan scales x2 (6000, 12000, 24000...)
     }
 
     container.innerHTML = plans.map(p => `
         <div class="tier-box" style="border: 1px solid ${p.isOpen ? 'var(--accent)' : '#ccc'}; background: ${p.isOpen ? '#fffde6' : '#f1f1f1'};">
-            <h4 style="margin: 0 0 5px 0; color: var(--primary);">Tier ${p.tier} Plan</h4>
-            <p style="margin: 4px 0; font-weight: bold; font-size: 16px;">₦${p.price.toLocaleString()}</p>
-            <p style="margin: 2px 0; font-size: 12px;">Daily Return: ₦${p.dailyReturn.toLocaleString()} (10%)</p>
-            <p style="margin: 2px 0; font-size: 12px;">Duration: 20 Days</p>
-            <p style="margin: 2px 0; font-size: 12px; color: #555;">Total Return: ₦${p.totalReturn.toLocaleString()}</p>
+            <img src="${planImages[p.tier - 1] || 'https://cdn-icons-png.flaticon.com/512/3135/3135706.png'}" alt="Badge" style="width: 40px; height: 40px; margin-bottom: 5px;">
+            <h4 style="margin: 0 0 5px 0; color: var(--primary);">Tier ${p.tier}</h4>
+            <p style="margin: 4px 0; font-weight: bold; font-size: 15px;">₦${p.price.toLocaleString()}</p>
+            <p style="margin: 2px 0; font-size: 11px;">Daily: ₦${p.dailyReturn.toLocaleString()} (15%)</p>
+            <p style="margin: 2px 0; font-size: 11px;">Duration: 20 Days</p>
+            <p style="margin: 2px 0; font-size: 11px; color: #555;">Total: ₦${p.totalReturn.toLocaleString()}</p>
             ${p.isOpen ? 
-                `<button class="btn" style="padding: 6px; margin-top: 8px; font-size: 13px;" onclick="investInPlan(${p.price})">Invest Now</button>` : 
-                `<span style="display:inline-block; margin-top:8px; background:#ddd; padding:4px 8px; border-radius:4px; font-size:11px; font-weight:bold; color:#666;">Coming Soon</span>`
+                `<button class="btn" style="padding: 6px; margin-top: 8px; font-size: 12px;" onclick="investInPlan(${p.price})">Invest Now</button>` : 
+                `<span style="display:inline-block; margin-top:8px; background:#ddd; padding:4px 8px; border-radius:4px; font-size:10px; font-weight:bold; color:#666;">Coming Soon</span>`
             }
         </div>
     `).join('');
@@ -183,7 +195,7 @@ async function investInPlan(amount) {
     if (!client || !currentUserProfile) return;
 
     if (currentUserProfile.wallet_balance < amount) {
-        return alert("Insufficient wallet balance to invest in this plan!");
+        return alert("Insufficient wallet balance! Please make a deposit first.");
     }
 
     const newBalance = currentUserProfile.wallet_balance - amount;
@@ -194,15 +206,76 @@ async function investInPlan(amount) {
         total_investment: newInvestment
     }).eq('id', currentUserProfile.id);
 
-    if (error) {
-        return alert("Investment failed: " + error.message);
-    }
+    if (error) return alert("Investment failed: " + error.message);
 
     alert(`Successfully invested ₦${amount.toLocaleString()}! Daily income will start dropping in 24 hours.`);
     await loadUserData({ id: currentUserProfile.id });
 }
 
-// Submit Withdrawal Request with Bank Details & Active Investment Check
+// Copy Company Account Number (One-Tap)
+function copyCompanyAccount() {
+    navigator.clipboard.writeText("6141619370");
+    alert("Company OPay Account Number copied to clipboard!");
+}
+
+// Copy Referral Link (One-Tap)
+function copyReferralLink() {
+    const refText = document.getElementById('referral-link-box').innerText;
+    navigator.clipboard.writeText(refText);
+    alert("Referral link copied to clipboard!");
+}
+
+// Submit Deposit Request ("I have made the payment")
+async function submitDepositRequest() {
+    const client = bootstrapSupabaseClient();
+    if (!client || !currentUserProfile) return;
+
+    const amountInput = document.getElementById('deposit-amount');
+    const proofInput = document.getElementById('deposit-proof');
+
+    const amount = parseFloat(amountInput.value);
+    const proof = proofInput.value.trim();
+
+    if (!amount || amount <= 0 || !proof) {
+        return alert("Please enter the deposit amount and your bank reference/proof.");
+    }
+
+    const { error } = await client.from('deposits').insert([
+        { user_id: currentUserProfile.id, maggi_id: currentUserProfile.maggi_id, amount: amount, proof: proof, status: 'pending' }
+    ]);
+
+    if (error) return alert("Deposit submission error: " + error.message);
+
+    alert("Deposit notification submitted successfully! Awaiting admin approval.");
+    amountInput.value = '';
+    proofInput.value = '';
+}
+
+// Save User Bank Details
+async function saveUserBankAccount() {
+    const client = bootstrapSupabaseClient();
+    if (!client || !currentUserProfile) return;
+
+    const bankName = document.getElementById('bank-name').value.trim();
+    const accountNumber = document.getElementById('account-number').value.trim();
+    const accountName = document.getElementById('account-name').value.trim();
+
+    if (!bankName || !accountNumber || !accountName) {
+        return alert("Please fill out all bank details.");
+    }
+
+    const { error } = await client.from('profiles').update({
+        bank_name: bankName,
+        account_number: accountNumber,
+        account_name: accountName
+    }).eq('id', currentUserProfile.id);
+
+    if (error) return alert("Error saving bank details: " + error.message);
+    alert("Bank account details saved successfully!");
+    await loadUserData({ id: currentUserProfile.id });
+}
+
+// Submit Withdrawal Request
 async function submitWithdrawalRequest() {
     const client = bootstrapSupabaseClient();
     if (!client || !currentUserProfile) return;
@@ -212,39 +285,103 @@ async function submitWithdrawalRequest() {
     }
 
     const amountInput = document.getElementById('withdraw-amount');
-    const bankNameInput = document.getElementById('bank-name');
-    const accountNumberInput = document.getElementById('account-number');
-    const accountNameInput = document.getElementById('account-name');
-
-    const amount = amountInput ? parseFloat(amountInput.value) : 0;
-    const bankName = bankNameInput ? bankNameInput.value.trim() : '';
-    const accountNumber = accountNumberInput ? accountNumberInput.value.trim() : '';
-    const accountName = accountNameInput ? accountNameInput.value.trim() : '';
+    const amount = parseFloat(amountInput.value);
 
     if (amount < 2000) {
         return alert("Minimum payout threshold is ₦2,000.");
     }
 
-    if (!bankName || !accountNumber || !accountName) {
-        return alert("Please fill in all bank account details for your withdrawal.");
+    if (!currentUserProfile.bank_number) {
+        return alert("Please save your bank account details above first before requesting a withdrawal.");
     }
 
     if (currentUserProfile.wallet_balance < amount) {
         return alert("Requested withdrawal amount exceeds your available wallet balance.");
     }
 
-    const updatedBalance = currentUserProfile.wallet_balance - amount;
-    const { error } = await client.from('profiles').update({
-        wallet_balance: updatedBalance
-    }).eq('id', currentUserProfile.id);
+    const { error } = await client.from('withdrawals').insert([
+        { 
+            user_id: currentUserProfile.id, 
+            maggi_id: currentUserProfile.maggi_id, 
+            amount: amount, 
+            bank_details: `${currentUserProfile.bank_name} - ${currentUserProfile.account_number} (${currentUserProfile.account_name})`,
+            status: 'pending' 
+        }
+    ]);
 
     if (error) return alert("Withdrawal error: " + error.message);
 
-    alert(`Withdrawal request of ₦${amount.toLocaleString()} submitted successfully to ${bankName} (${accountNumber})!`);
-    await loadUserData({ id: currentUserProfile.id });
+    alert(`Withdrawal request of ₦${amount.toLocaleString()} submitted successfully! Awaiting admin approval.`);
+    amountInput.value = '';
 }
 
-// Check if user is already logged in on startup
+// Admin Hub: Load Pending Deposits & Withdrawals
+async function loadAdminLedgers() {
+    const client = bootstrapSupabaseClient();
+    if (!client || !currentUserProfile || !currentUserProfile.is_admin) return;
+
+    // Load Deposits
+    const { data: deposits } = await client.from('deposits').select('*').eq('status', 'pending');
+    const depContainer = document.getElementById('admin-deposits-container');
+    if (depContainer) {
+        if (!deposits || deposits.length === 0) {
+            depContainer.innerHTML = "<p>No pending deposits.</p>";
+        } else {
+            depContainer.innerHTML = `<table class="admin-table"><tr><th>User ID</th><th>Amount</th><th>Proof</th><th>Action</th></tr>` +
+                deposits.map(d => `<tr><td>${d.maggi_id}</td><td>₦${d.amount.toLocaleString()}</td><td>${d.proof}</td><td><button class="btn-success" onclick="approveDeposit('${d.id}', '${d.user_id}', ${d.amount})">Approve</button></td></tr>`).join('') + `</table>`;
+        }
+    }
+
+    // Load Withdrawals
+    const { data: withdrawals } = await client.from('withdrawals').select('*').eq('status', 'pending');
+    const wdContainer = document.getElementById('admin-withdrawals-container');
+    if (wdContainer) {
+        if (!withdrawals || withdrawals.length === 0) {
+            wdContainer.innerHTML = "<p>No pending withdrawals.</p>";
+        } else {
+            wdContainer.innerHTML = `<table class="admin-table"><tr><th>User ID</th><th>Amount</th><th>Bank Info</th><th>Action</th></tr>` +
+                withdrawals.map(w => `<tr><td>${w.maggi_id}</td><td>₦${w.amount.toLocaleString()}</td><td>${w.bank_details}</td><td><button class="btn-success" onclick="approveWithdrawal('${w.id}', '${w.user_id}', ${w.amount})">Approve</button> <button class="btn-danger" onclick="rejectWithdrawal('${w.id}')">Reject</button></td></tr>`).join('') + `</table>`;
+        }
+    }
+}
+
+// Admin: Approve Deposit
+async function approveDeposit(depositId, userId, amount) {
+    const client = bootstrapSupabaseClient();
+    const { data: targetUser } = await client.from('profiles').select('wallet_balance').eq('id', userId).single();
+    if (!targetUser) return;
+
+    await client.from('profiles').update({ wallet_balance: targetUser.wallet_balance + amount }).eq('id', userId);
+    await client.from('deposits').update({ status: 'approved' }).eq('id', depositId);
+    alert("Deposit approved and wallet credited!");
+    loadAdminLedgers();
+}
+
+// Admin: Approve Withdrawal
+async function approveWithdrawal(withdrawalId, userId, amount) {
+    const client = bootstrapSupabaseClient();
+    const { data: targetUser } = await client.from('profiles').select('wallet_balance').eq('id', userId).single();
+    if (!targetUser) return;
+
+    if (targetUser.wallet_balance < amount) {
+        return alert("User does not have sufficient balance anymore.");
+    }
+
+    await client.from('profiles').update({ wallet_balance: targetUser.wallet_balance - amount }).eq('id', userId);
+    await client.from('withdrawals').update({ status: 'approved' }).eq('id', withdrawalId);
+    alert("Withdrawal approved!");
+    loadAdminLedgers();
+}
+
+// Admin: Reject Withdrawal
+async function rejectWithdrawal(withdrawalId) {
+    const client = bootstrapSupabaseClient();
+    await client.from('withdrawals').update({ status: 'rejected' }).eq('id', withdrawalId);
+    alert("Withdrawal rejected.");
+    loadAdminLedgers();
+}
+
+// Check session on startup
 document.addEventListener('DOMContentLoaded', async () => {
     const client = bootstrapSupabaseClient();
     if (client) {
