@@ -68,22 +68,22 @@ function switchAdminTab(tabName) {
     }
 }
 
-// Fixed Authentication Engine
+// Fixed Authentication Engine & Referral Code Handling
 async function handleAuth(type) {
     const client = bootstrapSupabaseClient();
-    if (!client) return alert("Database initializing. Please try again in 2 seconds.");
+    if (!client) return alert("Database initializing. Please try again.");
 
     const emailInput = document.getElementById('auth-email');
     const passwordInput = document.getElementById('auth-password');
+    const refCodeInput = document.getElementById('auth-ref-code');
 
     const email = emailInput ? emailInput.value.trim().toLowerCase() : '';
     const password = passwordInput ? passwordInput.value : '';
+    const refCode = refCodeInput ? refCodeInput.value.trim() : null;
 
     if (!email || !password) return alert("Please enter both email and password.");
 
     const isAdmin = (email === 'omoopeola1@gmail.com');
-    const urlParams = new URLSearchParams(window.location.search);
-    const refCode = urlParams.get('ref') || null;
 
     if (type === 'register') {
         const { data, error } = await client.auth.signUp({ email, password });
@@ -93,7 +93,6 @@ async function handleAuth(type) {
         if (user) {
             const maggiId = generateMaggiId();
             
-            // Insert profile record directly
             await client.from('profiles').upsert([
                 { 
                     id: user.id, 
@@ -108,8 +107,7 @@ async function handleAuth(type) {
 
             alert("Registration complete! Welcome Bonus ₦2,000 credited.");
             
-            // Auto sign in immediately after registration
-            const { data: signData, error: signError } = await client.auth.signInWithPassword({ email, password });
+            const { data: signData } = await client.auth.signInWithPassword({ email, password });
             if (signData && signData.user) {
                 await loadUserData(signData.user);
             } else {
@@ -118,14 +116,7 @@ async function handleAuth(type) {
         }
     } else if (type === 'login') {
         const { data: logData, error: logError } = await client.auth.signInWithPassword({ email, password });
-        if (logError) {
-            if (logError.message.includes("Email not confirmed")) {
-                alert("Please disable 'Confirm email' in Supabase Authentication settings to log in immediately.");
-            } else {
-                alert("Login Error: " + logError.message);
-            }
-            return;
-        }
+        if (logError) return alert("Login Error: " + logError.message);
 
         if (isAdmin && logData.user) {
             await client.from('profiles').update({ is_admin: true }).eq('id', logData.user.id);
@@ -163,7 +154,6 @@ async function loadUserData(user) {
 
     let { data: profile } = await client.from('profiles').select('*').eq('id', user.id).single();
     
-    // Fallback profile creation if not found
     if (!profile) {
         const maggiId = generateMaggiId();
         const isAdmin = (user.email === 'omoopeola1@gmail.com');
@@ -353,36 +343,70 @@ async function loadUserTransactions() {
     feed.innerHTML = html || '<p style="color:#666;">No transaction history yet.</p>';
 }
 
+// 3-Level Team Records Loader
 async function loadTeamRecords() {
     const client = bootstrapSupabaseClient();
     if (!client || !currentUserProfile) return;
 
-    const { data: referrals } = await client.from('profiles').select('maggi_id, total_investment, created_at').eq('referred_by', currentUserProfile.maggi_id);
+    const { data: allProfiles } = await client.from('profiles').select('maggi_id, referred_by, total_investment, created_at');
+    
+    if (!allProfiles) return;
+
+    // Level 1: Direct Referrals
+    const level1 = allProfiles.filter(p => p.referred_by === currentUserProfile.maggi_id);
+    const level1Ids = new Set(level1.map(p => p.maggi_id));
+
+    // Level 2: Secondary Referrals
+    const level2 = allProfiles.filter(p => level1Ids.has(p.referred_by));
+    const level2Ids = new Set(level2.map(p => p.maggi_id));
+
+    // Level 3: Tertiary Referrals
+    const level3 = allProfiles.filter(p => level2Ids.has(p.referred_by));
+
+    const totalMembers = level1.length + level2.length + level3.length;
+    document.getElementById('team-count').innerText = totalMembers;
 
     const teamList = document.getElementById('team-records-list');
-    const teamCount = document.getElementById('team-count');
-
-    const refs = referrals || [];
-    if (teamCount) teamCount.innerText = refs.length;
-
     if (!teamList) return;
 
-    if (refs.length === 0) {
-        teamList.innerHTML = '<p style="color:#666; font-size:13px;">No referrals yet. Share your referral link to build your team and earn 10% commission!</p>';
+    if (totalMembers === 0) {
+        teamList.innerHTML = '<p style="color:#666; font-size:13px;">No team members yet. Share your link to start earning 20% Level 1, 2% Level 2, and 1% Level 3 commissions!</p>';
         return;
     }
 
-    teamList.innerHTML = refs.map(r => `
-        <div class="tx-item">
-            <div>
-                <strong>Member ID:</strong> ${r.maggi_id}<br>
-                <small style="color:#666;">Joined: ${new Date(r.created_at).toLocaleDateString()}</small>
+    let html = '';
+
+    if (level1.length > 0) {
+        html += `<h4 style="margin:10px 0 5px 0; color:var(--primary);">Level 1 Directs (20% Commission)</h4>`;
+        html += level1.map(r => `
+            <div class="tx-item">
+                <div><strong>ID:</strong> ${r.maggi_id}<br><small style="color:#666;">Joined: ${new Date(r.created_at).toLocaleDateString()}</small></div>
+                <div><span style="background:#28a745; color:white; padding:3px 8px; border-radius:10px; font-size:10px; font-weight:bold;">Level 1</span></div>
             </div>
-            <div>
-                <span style="background:#28a745; color:white; padding:3px 8px; border-radius:10px; font-size:10px; font-weight:bold;">Active</span>
+        `).join('');
+    }
+
+    if (level2.length > 0) {
+        html += `<h4 style="margin:15px 0 5px 0; color:#333;">Level 2 (2% Commission)</h4>`;
+        html += level2.map(r => `
+            <div class="tx-item">
+                <div><strong>ID:</strong> ${r.maggi_id}<br><small style="color:#666;">Joined: ${new Date(r.created_at).toLocaleDateString()}</small></div>
+                <div><span style="background:#007bff; color:white; padding:3px 8px; border-radius:10px; font-size:10px; font-weight:bold;">Level 2</span></div>
             </div>
-        </div>
-    `).join('');
+        `).join('');
+    }
+
+    if (level3.length > 0) {
+        html += `<h4 style="margin:15px 0 5px 0; color:#666;">Level 3 (1% Commission)</h4>`;
+        html += level3.map(r => `
+            <div class="tx-item">
+                <div><strong>ID:</strong> ${r.maggi_id}<br><small style="color:#666;">Joined: ${new Date(r.created_at).toLocaleDateString()}</small></div>
+                <div><span style="background:#6c757d; color:white; padding:3px 8px; border-radius:10px; font-size:10px; font-weight:bold;">Level 3</span></div>
+            </div>
+        `).join('');
+    }
+
+    teamList.innerHTML = html;
 }
 
 // ADMIN DASHBOARD LOADER
@@ -470,6 +494,7 @@ async function loadAdminDashboardData() {
     }
 }
 
+// Multi-Tier Commission Trigger (L1: 20%, L2: 2%, L3: 1%)
 async function approveDeposit(depositId, userId, amount, maggiId) {
     const client = bootstrapSupabaseClient();
     const { data: target } = await client.from('profiles').select('*').eq('id', userId).single();
@@ -478,15 +503,34 @@ async function approveDeposit(depositId, userId, amount, maggiId) {
     await client.from('profiles').update({ wallet_balance: (target.wallet_balance || 0) + amount }).eq('id', userId);
     await client.from('deposits').update({ status: 'approved' }).eq('id', depositId);
 
+    // Level 1 Commission (20%)
     if (target.referred_by) {
-        const { data: referrer } = await client.from('profiles').select('*').eq('maggi_id', target.referred_by).single();
-        if (referrer) {
-            const commission = amount * 0.10;
-            await client.from('profiles').update({ wallet_balance: (referrer.wallet_balance || 0) + commission }).eq('id', referrer.id);
+        const { data: l1User } = await client.from('profiles').select('*').eq('maggi_id', target.referred_by).single();
+        if (l1User) {
+            const l1Bonus = amount * 0.20;
+            await client.from('profiles').update({ wallet_balance: (l1User.wallet_balance || 0) + l1Bonus }).eq('id', l1User.id);
+
+            // Level 2 Commission (2%)
+            if (l1User.referred_by) {
+                const { data: l2User } = await client.from('profiles').select('*').eq('maggi_id', l1User.referred_by).single();
+                if (l2User) {
+                    const l2Bonus = amount * 0.02;
+                    await client.from('profiles').update({ wallet_balance: (l2User.wallet_balance || 0) + l2Bonus }).eq('id', l2User.id);
+
+                    // Level 3 Commission (1%)
+                    if (l2User.referred_by) {
+                        const { data: l3User } = await client.from('profiles').select('*').eq('maggi_id', l2User.referred_by).single();
+                        if (l3User) {
+                            const l3Bonus = amount * 0.01;
+                            await client.from('profiles').update({ wallet_balance: (l3User.wallet_balance || 0) + l3Bonus }).eq('id', l3User.id);
+                        }
+                    }
+                }
+            }
         }
     }
 
-    alert("Deposit Approved, Wallet Credited & Referral Commission Triggered!");
+    alert("Deposit Approved & Tiered Referral Commissions Paid!");
     loadAdminDashboardData();
 }
 
@@ -549,6 +593,17 @@ async function redeemGiftCode() {
 }
 
 document.addEventListener('DOMContentLoaded', async () => {
+    // Check URL parameters for auto referral pre-fill
+    const urlParams = new URLSearchParams(window.location.search);
+    const refParam = urlParams.get('ref');
+    if (refParam) {
+        const refInput = document.getElementById('auth-ref-code');
+        if (refInput) {
+            refInput.value = refParam;
+            refInput.readOnly = true;
+        }
+    }
+
     const client = bootstrapSupabaseClient();
     if (client) {
         const { data: { session } } = await client.auth.getSession();
