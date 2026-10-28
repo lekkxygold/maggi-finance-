@@ -63,6 +63,7 @@
             <h3>Welcome Bonus: ₦2,000</h3>
             <input type="email" id="auth-email" placeholder="Enter Email Address">
             <input type="password" id="auth-password" placeholder="Enter Password">
+            <input type="text" id="auth-ref-code" placeholder="Referral Code (Optional / Auto-filled)">
             <button class="btn" id="btn-login">Login</button>
             <button class="btn btn-secondary" id="btn-register" style="margin-top:8px;">Register Account</button>
             <button class="btn" style="background: transparent; color: #555; margin-top: 8px; font-size: 14px; box-shadow: none;" onclick="handleForgotPassword()">Forgot Password?</button>
@@ -137,8 +138,12 @@
         <!-- Team & Referral Network View -->
         <div id="view-team" class="hidden">
             <div class="card">
-                <h3>Referral Commission & Network</h3>
-                <p>Earn a generous <strong>10% commission</strong> when your direct referrals fund or invest in plans!</p>
+                <h3>3-Tier Referral Commissions</h3>
+                <div style="font-size:12px; background:#fdf8e2; padding:10px; border-radius:8px; margin-bottom:10px;">
+                    <div><strong>Level 1 (Direct Referrals):</strong> 20% Commission</div>
+                    <div><strong>Level 2 (Secondary Referrals):</strong> 2% Commission</div>
+                    <div><strong>Level 3 (Tertiary Referrals):</strong> 1% Commission</div>
+                </div>
                 <div class="copy-box">
                     <span id="referral-link-box" style="font-size:11px;">Loading Link...</span>
                     <button class="btn" style="width: auto; padding: 6px 12px; font-size: 12px;" onclick="copyReferralLink()">Copy</button>
@@ -146,7 +151,7 @@
             </div>
 
             <div class="card">
-                <h3>Your Team Records (<span id="team-count">0</span> Members)</h3>
+                <h3>Your Team Records (<span id="team-count">0</span> Total Members)</h3>
                 <div id="team-records-list"><p style="color:#666;">Loading team members...</p></div>
             </div>
         </div>
