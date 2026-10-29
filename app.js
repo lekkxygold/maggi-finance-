@@ -569,4 +569,14 @@ document.addEventListener('DOMContentLoaded', async () => {
         }
     }
 
-    const client =
+    const client = bootstrapSupabaseClient();
+    if (client) {
+        const { data: { session } } = await client.auth.getSession();
+        if (session && session.user) {
+            await loadUserData(session.user);
+        } else {
+            const idDisplay = document.getElementById('user-id-display');
+            if (idDisplay) idDisplay.innerText = "Maggi ID: Guest";
+        }
+    }
+});
