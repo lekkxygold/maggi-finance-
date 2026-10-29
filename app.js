@@ -175,8 +175,6 @@ async function loadUserData(user) {
 
         document.getElementById('referral-link-box').innerText = `https://maggi-finance.onrender.com/?ref=${profile.maggi_id}`;
 
-        renderInvestmentTiers();
-
         document.getElementById('app-nav').classList.remove('hidden');
         document.getElementById('logout-btn').classList.remove('hidden');
 
@@ -188,39 +186,7 @@ async function loadUserData(user) {
     }
 }
 
-function renderInvestmentTiers() {
-    const container = document.getElementById('tiers-container');
-    if (!container) return;
-
-    const plans = [];
-    let price = 6000;
-    for (let i = 1; i <= 10; i++) {
-        plans.push({
-            tier: i,
-            price: price,
-            dailyReturn: price * 0.15,
-            totalReturn: (price * 0.15) * 20,
-            isOpen: i <= 3 
-        });
-        price *= 2;
-    }
-
-    container.innerHTML = plans.map(p => `
-        <div class="tier-box" style="border: 1px solid ${p.isOpen ? 'var(--accent)' : '#ccc'}; background: ${p.isOpen ? '#fffde6' : '#f1f1f1'};">
-            <h4 style="margin: 0 0 5px 0; color: var(--primary);">Tier ${p.tier}</h4>
-            <p style="margin: 4px 0; font-weight: bold; font-size: 15px;">₦${p.price.toLocaleString()}</p>
-            <p style="margin: 2px 0; font-size: 11px;">Daily: ₦${p.dailyReturn.toLocaleString()} (15%)</p>
-            <p style="margin: 2px 0; font-size: 11px;">Duration: 20 Days</p>
-            <p style="margin: 2px 0; font-size: 11px; color: #555;">Total: ₦${p.totalReturn.toLocaleString()}</p>
-            ${p.isOpen ? 
-                `<button class="btn" style="padding: 6px; margin-top: 8px; font-size: 12px;" onclick="investInPlan(${p.price})">Invest Now</button>` : 
-                `<span style="display:inline-block; margin-top:8px; background:#ddd; padding:4px 8px; border-radius:4px; font-size:10px; font-weight:bold; color:#666;">Coming Soon</span>`
-            }
-        </div>
-    `).join('');
-}
-
-async function investInPlan(amount) {
+async function investInPlan(tierNumber, amount) {
     const client = bootstrapSupabaseClient();
     if (!client || !currentUserProfile) return;
 
@@ -230,7 +196,7 @@ async function investInPlan(amount) {
     const newInvestment = (currentUserProfile.total_investment || 0) + amount;
 
     await client.from('profiles').update({ wallet_balance: newBalance, total_investment: newInvestment }).eq('id', currentUserProfile.id);
-    alert(`Successfully invested ₦${amount.toLocaleString()}!`);
+    alert(`Successfully invested Tier ${tierNumber} (₦${amount.toLocaleString()})!`);
     await loadUserData({ id: currentUserProfile.id });
 }
 
@@ -603,13 +569,4 @@ document.addEventListener('DOMContentLoaded', async () => {
         }
     }
 
-    const client = bootstrapSupabaseClient();
-    if (client) {
-        const { data: { session } } = await client.auth.getSession();
-        if (session && session.user) {
-            await loadUserData(session.user);
-        } else {
-            document.getElementById('user-id-display').innerText = "Maggi ID: Guest";
-        }
-    }
-});
+    const client =
