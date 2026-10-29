@@ -7,40 +7,55 @@
     <!-- Include Supabase CDN -->
     <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
     <style>
-        :root { --primary: #e62310; --accent: #f2c200; --dark: #121212; --card-bg: #1e1e1e; --light: #f8f9fa; }
-        body { font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif; background: var(--light); margin: 0; padding: 0; color: #1a1a1a; }
-        .header { background: var(--primary); color: white; padding: 15px; display: flex; align-items: center; justify-content: space-between; }
+        :root { --primary: #e62310; --primary-hover: #c51d0d; --accent: #f2c200; --light: #f8f9fa; --card-bg: #ffffff; --border-color: #e5e7eb; --text-main: #1f2937; --text-muted: #6b7280; }
+        body { font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif; background: var(--light); margin: 0; padding: 0; color: var(--text-main); }
+        .header { background: var(--primary); color: white; padding: 15px 20px; display: flex; align-items: center; justify-content: space-between; box-shadow: 0 2px 4px rgba(0,0,0,0.1); }
         .header-left { display: flex; align-items: center; gap: 12px; }
-        .header img { height: 45px; width: 45px; object-fit: cover; border-radius: 6px; border: 2px solid white; background: white; }
-        .container { padding: 15px; max-width: 600px; margin: 0 auto; }
-        .card { background: white; padding: 20px; border-radius: 12px; margin-bottom: 15px; box-shadow: 0 4px 6px rgba(0,0,0,0.05); border-left: 5px solid var(--accent); }
-        .btn { background: var(--primary); color: white; border: none; padding: 12px 20px; width: 100%; border-radius: 8px; font-weight: bold; font-size: 16px; cursor: pointer; }
-        .btn-secondary { background: #333; }
+        .header img { height: 40px; width: 40px; object-fit: cover; border-radius: 8px; border: 2px solid white; background: white; }
+        .container { padding: 20px 15px; max-width: 480px; margin: 0 auto; }
+        
+        /* Auth Card Layout matching reference */
+        .auth-card { background: var(--card-bg); border: 1px solid var(--border-color); padding: 30px 24px; border-radius: 16px; margin-bottom: 20px; box-shadow: 0 10px 25px rgba(0,0,0,0.05); }
+        .auth-title { font-size: 24px; font-weight: bold; margin: 0 0 6px 0; color: var(--text-main); }
+        .auth-subtitle { font-size: 13px; color: var(--text-muted); margin: 0 0 24px 0; line-height: 1.5; }
+        .input-group { margin-bottom: 16px; }
+        .input-label { display: block; font-size: 13px; font-weight: 600; margin-bottom: 6px; color: var(--text-main); }
+        .input-wrapper { position: relative; display: flex; align-items: center; }
+        .input-icon { position: absolute; left: 14px; color: var(--text-muted); font-size: 16px; }
+        .auth-input { width: 100%; padding: 12px 14px 12px 42px; background: #f9fafb; border: 1px solid var(--border-color); border-radius: 10px; color: var(--text-main); font-size: 14px; box-sizing: border-box; transition: border-color 0.2s; }
+        .auth-input:focus { outline: none; border-color: var(--primary); background: #fff; }
+        .auth-input::placeholder { color: #9ca3af; }
+        
+        .btn { background: var(--primary); color: white; border: none; padding: 12px 20px; width: 100%; border-radius: 10px; font-weight: bold; font-size: 15px; cursor: pointer; transition: background 0.2s; }
+        .btn:hover { background: var(--primary-hover); }
+        .btn-secondary { background: transparent; color: var(--text-main); border: 1px solid var(--border-color); margin-top: 10px; }
+        .btn-secondary:hover { background: #f3f4f6; }
         .btn-success { background: #28a745; color: white; }
         .btn-danger { background: #dc3545; color: white; }
-        .nav-tabs { display: grid; grid-template-columns: repeat(6, 1fr); background: white; position: fixed; bottom: 0; width: 100%; box-shadow: 0 -2px 10px rgba(0,0,0,0.1); font-size: 10px; text-align: center; z-index: 1000; }
-        .nav-tabs div { padding: 12px 0; cursor: pointer; border-top: 3px solid transparent; }
-        .nav-tabs .active { border-top-color: var(--primary); font-weight: bold; color: var(--primary); }
-        .tier-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 10px; }
-        .tier-box { background: #fffde6; border: 1px solid var(--accent); padding: 12px; border-radius: 8px; text-align: center; display: flex; flex-direction: column; justify-content: space-between; }
+
+        /* Modern Navigation Bar Design */
+        .nav-tabs { display: grid; grid-template-columns: repeat(6, 1fr); background: white; border-top: 1px solid var(--border-color); position: fixed; bottom: 0; width: 100%; font-size: 11px; text-align: center; z-index: 1000; box-shadow: 0 -4px 12px rgba(0,0,0,0.06); }
+        .nav-tabs div { padding: 8px 0 10px 0; cursor: pointer; color: var(--text-muted); border-top: 3px solid transparent; transition: all 0.2s ease; display: flex; flex-direction: column; align-items: center; gap: 2px; }
+        .nav-tabs div span.nav-icon { font-size: 16px; }
+        .nav-tabs .active { border-top-color: var(--primary); font-weight: bold; color: var(--primary); background: #fffaf9; }
+        
+        .tier-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 12px; }
+        .tier-box { background: #fffde6; border: 1px solid var(--accent); padding: 14px; border-radius: 12px; text-align: center; display: flex; flex-direction: column; justify-content: space-between; }
+        .card { background: white; border: 1px solid var(--border-color); padding: 20px; border-radius: 16px; margin-bottom: 15px; box-shadow: 0 2px 4px rgba(0,0,0,0.02); }
         .hidden { display: none !important; }
-        input, select { width: 100%; padding: 10px; margin: 8px 0; border: 1px solid #ccc; border-radius: 6px; box-sizing: border-box; }
-        .copy-box { background: #f1f1f1; padding: 10px; border-radius: 6px; font-size: 13px; display: flex; justify-content: space-between; align-items: center; margin: 8px 0; word-break: break-all; }
+        .copy-box { background: #f1f1f1; border: 1px solid var(--border-color); padding: 12px; border-radius: 10px; font-size: 13px; display: flex; justify-content: space-between; align-items: center; margin: 8px 0; word-break: break-all; }
 
         /* Admin Dark Theme */
-        .admin-theme { background: var(--dark); color: #fff; padding: 15px; border-radius: 16px; }
-        .admin-nav { display: flex; gap: 8px; background: #252525; padding: 6px; border-radius: 20px; margin-bottom: 15px; }
-        .admin-nav-btn { flex: 1; background: transparent; border: none; color: #aaa; padding: 10px; border-radius: 15px; font-size: 12px; font-weight: bold; cursor: pointer; }
-        .admin-nav-btn.active { background: #f5eedc; color: #000; }
-        .alert-card { background: #1a1a1a; border: 1px solid #332b17; border-radius: 14px; padding: 16px; margin-bottom: 12px; }
-        .alert-badge { background: #333; color: #aaa; font-size: 10px; font-weight: bold; padding: 3px 8px; border-radius: 10px; display: inline-block; margin-bottom: 8px; }
-        .alert-title { font-size: 16px; font-weight: bold; margin: 0 0 4px 0; color: #fff; }
-        .alert-desc { font-size: 12px; color: #aaa; margin: 0 0 10px 0; }
-        .alert-amount { font-size: 18px; font-weight: bold; color: #fff; margin-bottom: 12px; }
+        .admin-theme { background: #121212; color: #fff; padding: 15px; border-radius: 16px; }
+        .admin-nav { display: flex; gap: 8px; background: #252525; padding: 6px; border-radius: 12px; margin-bottom: 15px; }
+        .admin-nav-btn { flex: 1; background: transparent; border: none; color: #aaa; padding: 8px; border-radius: 8px; font-size: 11px; font-weight: bold; cursor: pointer; }
+        .admin-nav-btn.active { background: var(--accent); color: #000; }
+        .alert-card { background: #1a1a1a; border: 1px solid #332b17; border-radius: 12px; padding: 16px; margin-bottom: 12px; }
+        .alert-badge { background: #333; color: #aaa; font-size: 10px; font-weight: bold; padding: 3px 8px; border-radius: 8px; display: inline-block; margin-bottom: 8px; }
         .admin-table { width: 100%; font-size: 12px; border-collapse: collapse; color: #fff; }
         .admin-table th, .admin-table td { border: 1px solid #333; padding: 8px; text-align: left; }
         .admin-table th { background: #252525; }
-        .tx-item { background: #f9f9f9; border: 1px solid #eee; padding: 10px; border-radius: 8px; margin-bottom: 8px; font-size: 12px; display: flex; justify-content: space-between; align-items: center; }
+        .tx-item { background: #f9f9f9; border: 1px solid #eee; padding: 12px; border-radius: 10px; margin-bottom: 8px; font-size: 12px; display: flex; justify-content: space-between; align-items: center; }
     </style>
 </head>
 <body>
@@ -50,23 +65,60 @@
         <div class="header-left">
             <img src="logo.jpg" alt="Maggi Logo">
             <div>
-                <h2 style="margin:0; font-size:18px;">Maggi Finance</h2>
-                <small id="user-id-display">Maggi ID: Loading...</small>
+                <h2 style="margin:0; font-size:16px;">Maggi Finance</h2>
+                <small id="user-id-display" style="color: rgba(255,255,255,0.8);">Maggi ID: Loading...</small>
             </div>
         </div>
-        <button id="logout-btn" class="btn-danger hidden" style="width: auto; padding: 6px 12px; font-size: 12px;" onclick="handleLogout()">Logout</button>
+        <button id="logout-btn" class="btn-danger hidden" style="width: auto; padding: 5px 10px; font-size: 11px;" onclick="handleLogout()">Logout</button>
     </div>
 
     <div class="container" style="margin-bottom: 80px;">
-        <!-- Auth View -->
-        <div id="view-auth" class="card">
-            <h3>Welcome Bonus: ₦2,000</h3>
-            <input type="email" id="auth-email" placeholder="Enter Email Address">
-            <input type="password" id="auth-password" placeholder="Enter Password">
-            <input type="text" id="auth-ref-code" placeholder="Referral Code (Optional / Auto-filled)">
-            <button class="btn" id="btn-login">Login</button>
-            <button class="btn btn-secondary" id="btn-register" style="margin-top:8px;">Register Account</button>
-            <button class="btn" style="background: transparent; color: #555; margin-top: 8px; font-size: 14px; box-shadow: none;" onclick="handleForgotPassword()">Forgot Password?</button>
+        <!-- Auth View (Combined Login / Register styled like reference) -->
+        <div id="view-auth" class="auth-card">
+            <div style="display: flex; align-items: center; gap: 8px; margin-bottom: 15px;">
+                <span style="background: #fff8dc; color: #b45309; font-size: 11px; font-weight: bold; padding: 4px 10px; border-radius: 20px; border: 1px solid #fef3c7;">✨ WELCOME BONUS: ₦2,000</span>
+            </div>
+            
+            <h1 class="auth-title" id="auth-main-title">Log in to Maggi.</h1>
+            <p class="auth-subtitle" id="auth-main-subtitle">Enter your account details to continue.</p>
+            
+            <div class="input-group" id="name-group" style="display: none;">
+                <label class="input-label">Full Name *</label>
+                <div class="input-wrapper">
+                    <span class="input-icon">👤</span>
+                    <input type="text" id="auth-name" class="auth-input" placeholder="Enter your full name">
+                </div>
+            </div>
+
+            <div class="input-group">
+                <label class="input-label">Email Address *</label>
+                <div class="input-wrapper">
+                    <span class="input-icon">✉️</span>
+                    <input type="email" id="auth-email" class="auth-input" placeholder="you@example.com">
+                </div>
+            </div>
+
+            <div class="input-group">
+                <label class="input-label" style="display: flex; justify-content: space-between;">
+                    <span>Password *</span>
+                    <span id="forgot-password-link" style="color: var(--primary); cursor: pointer; font-size: 12px;" onclick="handleForgotPassword()">Forgot Password?</span>
+                </label>
+                <div class="input-wrapper">
+                    <span class="input-icon">🔒</span>
+                    <input type="password" id="auth-password" class="auth-input" placeholder="Enter your password">
+                </div>
+            </div>
+
+            <div class="input-group" id="ref-group">
+                <label class="input-label">Referral Code <span style="color: var(--text-muted); font-weight: normal;">(Optional)</span></label>
+                <div class="input-wrapper">
+                    <span class="input-icon">🎁</span>
+                    <input type="text" id="auth-ref-code" class="auth-input" placeholder="Referral Code (Optional / Auto-filled)">
+                </div>
+            </div>
+
+            <button class="btn" id="btn-submit-action" onclick="handleAuthAction()">Log In →</button>
+            <button class="btn btn-secondary" id="btn-toggle-mode" onclick="toggleAuthMode()">Create an account</button>
         </div>
 
         <!-- Dashboard View -->
@@ -74,13 +126,13 @@
             <div class="card" style="padding: 0; overflow: hidden; border: none; margin-bottom: 15px;">
                 <img src="banner.jpg" 
                      alt="Maggi Finance Banner" 
-                     style="width: 100%; height: 160px; object-fit: cover; display: block;">
+                     style="width: 100%; height: 150px; object-fit: cover; display: block;">
             </div>
 
             <div class="card" style="background: linear-gradient(135deg, var(--primary), #b01507); color: white; border: none;">
-                <p style="margin:0;">Available Wallet Balance</p>
-                <h1 style="margin: 5px 0;" id="dash-balance">₦0.00</h1>
-                <small id="dash-investment">Active Investments: ₦0.00</small>
+                <p style="margin:0; font-size: 13px; opacity: 0.9;">Available Wallet Balance</p>
+                <h1 style="margin: 6px 0; font-size: 28px;" id="dash-balance">₦0.00</h1>
+                <small id="dash-investment" style="opacity: 0.9;">Active Investments: ₦0.00</small>
             </div>
             
             <div class="card">
@@ -94,97 +146,97 @@
         <!-- Investment View -->
         <div id="view-investment" class="hidden">
             <h3>Maggi Fixed Income Tiers</h3>
-            <p><small>*All open plans earn 15% daily yield payouts for 20 days.</small></p>
+            <p><small style="color: var(--text-muted);">*All open plans earn 15% daily yield payouts for 20 days.</small></p>
             <div class="tier-grid">
                 <!-- Tier 1 -->
                 <div class="tier-box">
                     <div>
-                        <img src="plan1.jpg" alt="Tier 1 Plan" style="width:100%; height:110px; object-fit:cover; border-radius:6px; margin-bottom:6px;">
-                        <h4 style="margin:4px 0; font-size:14px;">Tier 1 Plan</h4>
-                        <p style="margin:0; font-size:12px; color:#555;">₦6,000 Entry</p>
+                        <img src="plan1.jpg" alt="Tier 1 Plan" style="width:100%; height:100px; object-fit:cover; border-radius:8px; margin-bottom:6px;">
+                        <h4 style="margin:4px 0; font-size:14px; color: var(--primary);">Tier 1 Plan</h4>
+                        <p style="margin:0; font-size:12px; color:var(--text-muted);">₦6,000 Entry</p>
                     </div>
-                    <button class="btn" style="padding:8px; font-size:13px; margin-top:8px;" onclick="investInPlan(1, 6000)">Invest Now</button>
+                    <button class="btn" style="padding:8px; font-size:12px; margin-top:8px;" onclick="investInPlan(1, 6000)">Invest Now</button>
                 </div>
                 <!-- Tier 2 -->
                 <div class="tier-box">
                     <div>
-                        <img src="plan2.jpg" alt="Tier 2 Plan" style="width:100%; height:110px; object-fit:cover; border-radius:6px; margin-bottom:6px;">
-                        <h4 style="margin:4px 0; font-size:14px;">Tier 2 Plan</h4>
-                        <p style="margin:0; font-size:12px; color:#555;">₦12,000 Entry</p>
+                        <img src="plan2.jpg" alt="Tier 2 Plan" style="width:100%; height:100px; object-fit:cover; border-radius:8px; margin-bottom:6px;">
+                        <h4 style="margin:4px 0; font-size:14px; color: var(--primary);">Tier 2 Plan</h4>
+                        <p style="margin:0; font-size:12px; color:var(--text-muted);">₦12,000 Entry</p>
                     </div>
-                    <button class="btn" style="padding:8px; font-size:13px; margin-top:8px;" onclick="investInPlan(2, 12000)">Invest Now</button>
+                    <button class="btn" style="padding:8px; font-size:12px; margin-top:8px;" onclick="investInPlan(2, 12000)">Invest Now</button>
                 </div>
                 <!-- Tier 3 -->
                 <div class="tier-box">
                     <div>
-                        <img src="plan3.jpg" alt="Tier 3 Plan" style="width:100%; height:110px; object-fit:cover; border-radius:6px; margin-bottom:6px;">
-                        <h4 style="margin:4px 0; font-size:14px;">Tier 3 Plan</h4>
-                        <p style="margin:0; font-size:12px; color:#555;">₦24,000 Entry</p>
+                        <img src="plan3.jpg" alt="Tier 3 Plan" style="width:100%; height:100px; object-fit:cover; border-radius:8px; margin-bottom:6px;">
+                        <h4 style="margin:4px 0; font-size:14px; color: var(--primary);">Tier 3 Plan</h4>
+                        <p style="margin:0; font-size:12px; color:var(--text-muted);">₦24,000 Entry</p>
                     </div>
-                    <button class="btn" style="padding:8px; font-size:13px; margin-top:8px;" onclick="investInPlan(3, 24000)">Invest Now</button>
+                    <button class="btn" style="padding:8px; font-size:12px; margin-top:8px;" onclick="investInPlan(3, 24000)">Invest Now</button>
                 </div>
                 <!-- Tier 4 -->
                 <div class="tier-box">
                     <div>
-                        <img src="plan4.jpg" alt="Tier 4 Plan" style="width:100%; height:110px; object-fit:cover; border-radius:6px; margin-bottom:6px;">
-                        <h4 style="margin:4px 0; font-size:14px;">Tier 4 Plan</h4>
-                        <p style="margin:0; font-size:12px; color:#555;">₦36,000 Entry</p>
+                        <img src="plan4.jpg" alt="Tier 4 Plan" style="width:100%; height:100px; object-fit:cover; border-radius:8px; margin-bottom:6px;">
+                        <h4 style="margin:4px 0; font-size:14px; color: var(--primary);">Tier 4 Plan</h4>
+                        <p style="margin:0; font-size:12px; color:var(--text-muted);">₦36,000 Entry</p>
                     </div>
-                    <button class="btn" style="padding:8px; font-size:13px; margin-top:8px;" onclick="investInPlan(4, 36000)">Invest Now</button>
+                    <button class="btn" style="padding:8px; font-size:12px; margin-top:8px;" onclick="investInPlan(4, 36000)">Invest Now</button>
                 </div>
                 <!-- Tier 5 (Coming Soon) -->
-                <div class="tier-box" style="opacity: 0.7;">
+                <div class="tier-box" style="opacity: 0.6; background: #f3f4f6; border-color: #d1d5db;">
                     <div>
-                        <div style="width:100%; height:110px; background:#ddd; border-radius:6px; display:flex; align-items:center; justify-content:center; margin-bottom:6px; font-weight:bold; color:#777;">Coming Soon</div>
+                        <div style="width:100%; height:100px; background:#e5e7eb; border-radius:8px; display:flex; align-items:center; justify-content:center; margin-bottom:6px; font-weight:bold; color:var(--text-muted); font-size:12px;">Coming Soon</div>
                         <h4 style="margin:4px 0; font-size:14px;">Tier 5 Plan</h4>
-                        <p style="margin:0; font-size:12px; color:#555;">Locked</p>
+                        <p style="margin:0; font-size:12px; color:var(--text-muted);">Locked</p>
                     </div>
-                    <button class="btn btn-secondary" style="padding:8px; font-size:13px; margin-top:8px; cursor:not-allowed;" disabled>Coming Soon</button>
+                    <button class="btn btn-secondary" style="padding:8px; font-size:12px; margin-top:8px; cursor:not-allowed;" disabled>Coming Soon</button>
                 </div>
                 <!-- Tier 6 (Coming Soon) -->
-                <div class="tier-box" style="opacity: 0.7;">
+                <div class="tier-box" style="opacity: 0.6; background: #f3f4f6; border-color: #d1d5db;">
                     <div>
-                        <div style="width:100%; height:110px; background:#ddd; border-radius:6px; display:flex; align-items:center; justify-content:center; margin-bottom:6px; font-weight:bold; color:#777;">Coming Soon</div>
+                        <div style="width:100%; height:100px; background:#e5e7eb; border-radius:8px; display:flex; align-items:center; justify-content:center; margin-bottom:6px; font-weight:bold; color:var(--text-muted); font-size:12px;">Coming Soon</div>
                         <h4 style="margin:4px 0; font-size:14px;">Tier 6 Plan</h4>
-                        <p style="margin:0; font-size:12px; color:#555;">Locked</p>
+                        <p style="margin:0; font-size:12px; color:var(--text-muted);">Locked</p>
                     </div>
-                    <button class="btn btn-secondary" style="padding:8px; font-size:13px; margin-top:8px; cursor:not-allowed;" disabled>Coming Soon</button>
+                    <button class="btn btn-secondary" style="padding:8px; font-size:12px; margin-top:8px; cursor:not-allowed;" disabled>Coming Soon</button>
                 </div>
                 <!-- Tier 7 (Coming Soon) -->
-                <div class="tier-box" style="opacity: 0.7;">
+                <div class="tier-box" style="opacity: 0.6; background: #f3f4f6; border-color: #d1d5db;">
                     <div>
-                        <div style="width:100%; height:110px; background:#ddd; border-radius:6px; display:flex; align-items:center; justify-content:center; margin-bottom:6px; font-weight:bold; color:#777;">Coming Soon</div>
+                        <div style="width:100%; height:100px; background:#e5e7eb; border-radius:8px; display:flex; align-items:center; justify-content:center; margin-bottom:6px; font-weight:bold; color:var(--text-muted); font-size:12px;">Coming Soon</div>
                         <h4 style="margin:4px 0; font-size:14px;">Tier 7 Plan</h4>
-                        <p style="margin:0; font-size:12px; color:#555;">Locked</p>
+                        <p style="margin:0; font-size:12px; color:var(--text-muted);">Locked</p>
                     </div>
-                    <button class="btn btn-secondary" style="padding:8px; font-size:13px; margin-top:8px; cursor:not-allowed;" disabled>Coming Soon</button>
+                    <button class="btn btn-secondary" style="padding:8px; font-size:12px; margin-top:8px; cursor:not-allowed;" disabled>Coming Soon</button>
                 </div>
                 <!-- Tier 8 (Coming Soon) -->
-                <div class="tier-box" style="opacity: 0.7;">
+                <div class="tier-box" style="opacity: 0.6; background: #f3f4f6; border-color: #d1d5db;">
                     <div>
-                        <div style="width:100%; height:110px; background:#ddd; border-radius:6px; display:flex; align-items:center; justify-content:center; margin-bottom:6px; font-weight:bold; color:#777;">Coming Soon</div>
+                        <div style="width:100%; height:100px; background:#e5e7eb; border-radius:8px; display:flex; align-items:center; justify-content:center; margin-bottom:6px; font-weight:bold; color:var(--text-muted); font-size:12px;">Coming Soon</div>
                         <h4 style="margin:4px 0; font-size:14px;">Tier 8 Plan</h4>
-                        <p style="margin:0; font-size:12px; color:#555;">Locked</p>
+                        <p style="margin:0; font-size:12px; color:var(--text-muted);">Locked</p>
                     </div>
-                    <button class="btn btn-secondary" style="padding:8px; font-size:13px; margin-top:8px; cursor:not-allowed;" disabled>Coming Soon</button>
+                    <button class="btn btn-secondary" style="padding:8px; font-size:12px; margin-top:8px; cursor:not-allowed;" disabled>Coming Soon</button>
                 </div>
                 <!-- Tier 9 (Coming Soon) -->
-                <div class="tier-box" style="opacity: 0.7;">
+                <div class="tier-box" style="opacity: 0.6; background: #f3f4f6; border-color: #d1d5db;">
                     <div>
-                        <div style="width:100%; height:110px; background:#ddd; border-radius:6px; display:flex; align-items:center; justify-content:center; margin-bottom:6px; font-weight:bold; color:#777;">Coming Soon</div>
+                        <div style="width:100%; height:100px; background:#e5e7eb; border-radius:8px; display:flex; align-items:center; justify-content:center; margin-bottom:6px; font-weight:bold; color:var(--text-muted); font-size:12px;">Coming Soon</div>
                         <h4 style="margin:4px 0; font-size:14px;">Tier 9 Plan</h4>
-                        <p style="margin:0; font-size:12px; color:#555;">Locked</p>
+                        <p style="margin:0; font-size:12px; color:var(--text-muted);">Locked</p>
                     </div>
-                    <button class="btn btn-secondary" style="padding:8px; font-size:13px; margin-top:8px; cursor:not-allowed;" disabled>Coming Soon</button>
+                    <button class="btn btn-secondary" style="padding:8px; font-size:12px; margin-top:8px; cursor:not-allowed;" disabled>Coming Soon</button>
                 </div>
                 <!-- Tier 10 (Coming Soon) -->
-                <div class="tier-box" style="opacity: 0.7;">
+                <div class="tier-box" style="opacity: 0.6; background: #f3f4f6; border-color: #d1d5db;">
                     <div>
-                        <div style="width:100%; height:110px; background:#ddd; border-radius:6px; display:flex; align-items:center; justify-content:center; margin-bottom:6px; font-weight:bold; color:#777;">Coming Soon</div>
+                        <div style="width:100%; height:100px; background:#e5e7eb; border-radius:8px; display:flex; align-items:center; justify-content:center; margin-bottom:6px; font-weight:bold; color:var(--text-muted); font-size:12px;">Coming Soon</div>
                         <h4 style="margin:4px 0; font-size:14px;">Tier 10 Plan</h4>
-                        <p style="margin:0; font-size:12px; color:#555;">Locked</p>
+                        <p style="margin:0; font-size:12px; color:var(--text-muted);">Locked</p>
                     </div>
-                    <button class="btn btn-secondary" style="padding:8px; font-size:13px; margin-top:8px; cursor:not-allowed;" disabled>Coming Soon</button>
+                    <button class="btn btn-secondary" style="padding:8px; font-size:12px; margin-top:8px; cursor:not-allowed;" disabled>Coming Soon</button>
                 </div>
             </div>
         </div>
@@ -193,7 +245,7 @@
         <div id="view-wallet" class="hidden">
             <div class="card">
                 <h3>Fund Your Wallet (Deposit)</h3>
-                <p>Transfer funds to the official company account below:</p>
+                <p style="color: var(--text-muted); font-size: 13px;">Transfer funds to the official company account below:</p>
                 <div class="copy-box">
                     <div>
                         <strong>Bank:</strong> OPAY<br>
@@ -202,27 +254,27 @@
                     </div>
                     <button class="btn" style="width: auto; padding: 6px 12px; font-size: 12px;" onclick="copyCompanyAccount()">Copy</button>
                 </div>
-                <input type="number" id="deposit-amount" placeholder="Enter Amount Paid (e.g., 10000)">
-                <input type="text" id="deposit-proof" placeholder="Your Bank Name / Teller Reference">
-                <button class="btn-success btn" style="margin-top: 5px;" onclick="submitDepositRequest()">I Have Made The Payment</button>
+                <input type="number" id="deposit-amount" class="auth-input" style="margin-top: 10px;" placeholder="Enter Amount Paid (e.g., 10000)">
+                <input type="text" id="deposit-proof" class="auth-input" style="margin-top: 10px;" placeholder="Your Bank Name / Teller Reference">
+                <button class="btn-success btn" style="margin-top: 12px;" onclick="submitDepositRequest()">I Have Made The Payment</button>
             </div>
 
             <div class="card">
                 <h3>Bank Account & Withdrawal</h3>
-                <p>Minimum Payout: <strong>₦2,000</strong> (Requires Active Investment)</p>
+                <p style="color: var(--text-muted); font-size: 13px;">Minimum Payout: <strong>₦2,000</strong> (Requires Active Investment)</p>
                 
-                <input type="text" id="bank-name" placeholder="Bank Name (e.g. OPay, Access)">
-                <input type="text" id="account-number" placeholder="Account Number">
-                <input type="text" id="account-name" placeholder="Account Name">
-                <button class="btn-secondary btn" style="margin-bottom: 10px;" onclick="saveUserBankAccount()">Save Bank Details</button>
+                <input type="text" id="bank-name" class="auth-input" style="margin-top: 6px;" placeholder="Bank Name (e.g. OPay, Access)">
+                <input type="text" id="account-number" class="auth-input" style="margin-top: 6px;" placeholder="Account Number">
+                <input type="text" id="account-name" class="auth-input" style="margin-top: 6px;" placeholder="Account Name">
+                <button class="btn-secondary btn" style="margin-bottom: 15px;" onclick="saveUserBankAccount()">Save Bank Details</button>
 
-                <input type="number" id="withdraw-amount" placeholder="Enter Amount to Withdraw">
-                <button class="btn" onclick="submitWithdrawalRequest()">Request Payout</button>
+                <input type="number" id="withdraw-amount" class="auth-input" placeholder="Enter Amount to Withdraw">
+                <button class="btn" style="margin-top: 10px;" onclick="submitWithdrawalRequest()">Request Payout</button>
             </div>
 
             <div class="card">
                 <h3>Transaction History</h3>
-                <div id="user-transactions-feed"><p style="color:#666;">Loading transactions...</p></div>
+                <div id="user-transactions-feed"><p style="color:var(--text-muted);">Loading transactions...</p></div>
             </div>
         </div>
 
@@ -230,21 +282,21 @@
         <div id="view-team" class="hidden">
             <div class="card">
                 <h3>3-Tier Referral Commissions</h3>
-                <div style="font-size:12px; background:#fdf8e2; padding:10px; border-radius:8px; margin-bottom:10px;">
-                    <div><strong>Level 1 (Direct Referrals):</strong> 20% Commission (Earns up to ₦7,200 per active referral)</div>
-                    <div><strong>Level 2 (Secondary Referrals):</strong> 2% Commission</div>
+                <div style="font-size:12px; background:#fffdf0; border: 1px solid #fef3c7; padding:12px; border-radius:10px; margin-bottom:10px;">
+                    <div style="margin-bottom: 4px;"><strong>Level 1 (Direct Referrals):</strong> 20% Commission</div>
+                    <div style="margin-bottom: 4px;"><strong>Level 2 (Secondary Referrals):</strong> 2% Commission</div>
                     <div><strong>Level 3 (Tertiary Referrals):</strong> 1% Commission</div>
                 </div>
-                <p style="font-size: 13px; color: #444;">When your invited team members make active investments, your commission rewards automatically credit to your wallet balance!</p>
+                <p style="font-size: 12px; color: var(--text-muted);">When your invited team members make active investments, your commission rewards automatically credit to your wallet balance!</p>
                 <div class="copy-box">
-                    <span id="referral-link-box" style="font-size:11px;">Loading Link...</span>
+                    <span id="referral-link-box" style="font-size:11px; color:var(--primary);">Loading Link...</span>
                     <button class="btn" style="width: auto; padding: 6px 12px; font-size: 12px;" onclick="copyReferralLink()">Copy</button>
                 </div>
             </div>
 
             <div class="card">
                 <h3>Your Team Records (<span id="team-count">0</span> Total Members)</h3>
-                <div id="team-records-list"><p style="color:#666;">Loading team members...</p></div>
+                <div id="team-records-list"><p style="color:var(--text-muted);">Loading team members...</p></div>
             </div>
         </div>
 
@@ -252,7 +304,7 @@
         <div id="view-gift" class="hidden">
             <div class="card">
                 <h3>Redeem Special Gift Code</h3>
-                <input type="text" id="gift-code-input" placeholder="Enter Admin Gift Code">
+                <input type="text" id="gift-code-input" class="auth-input" placeholder="Enter Admin Gift Code" style="margin-bottom: 10px;">
                 <button class="btn" onclick="redeemGiftCode()">Claim Voucher</button>
             </div>
         </div>
@@ -285,34 +337,81 @@
 
                 <div id="admin-sub-gift" class="hidden">
                     <h4 style="color:#fff;">Generate Promotional Gift Code</h4>
-                    <input type="text" id="admin-code" placeholder="Code String (e.g. MAGGI500)">
-                    <input type="number" id="admin-amount" placeholder="Naira Value (e.g. 1000)">
-                    <input type="number" id="admin-qty" placeholder="Total Claims Allowed">
+                    <input type="text" id="admin-code" class="auth-input" style="background:#1a1a1a; color:#fff; margin-bottom:8px;" placeholder="Code String (e.g. MAGGI500)">
+                    <input type="number" id="admin-amount" class="auth-input" style="background:#1a1a1a; color:#fff; margin-bottom:8px;" placeholder="Naira Value (e.g. 1000)">
+                    <input type="number" id="admin-qty" class="auth-input" style="background:#1a1a1a; color:#fff; margin-bottom:8px;" placeholder="Total Claims Allowed">
                     <button class="btn" style="margin-top:8px;" onclick="createAdminGiftCode()">Issue Gift Code</button>
                 </div>
             </div>
         </div>
     </div>
 
-    <!-- Navigation -->
+    <!-- Redesigned Navigation Bar with Icons -->
     <div id="app-nav" class="nav-tabs hidden">
-        <div onclick="switchView('view-dashboard')" class="active">Dash</div>
-        <div onclick="switchView('view-investment')">Plans</div>
-        <div onclick="switchView('view-wallet')">Wallet</div>
-        <div onclick="switchView('view-team')">Team</div>
-        <div onclick="switchView('view-gift')">Voucher</div>
-        <div onclick="switchView('view-admin')" id="admin-nav-tab" class="hidden">Admin</div>
+        <div onclick="switchView('view-dashboard')" class="active">
+            <span class="nav-icon">🏠</span>
+            <span>Dash</span>
+        </div>
+        <div onclick="switchView('view-investment')">
+            <span class="nav-icon">📈</span>
+            <span>Plans</span>
+        </div>
+        <div onclick="switchView('view-wallet')">
+            <span class="nav-icon">💳</span>
+            <span>Wallet</span>
+        </div>
+        <div onclick="switchView('view-team')">
+            <span class="nav-icon">👥</span>
+            <span>Team</span>
+        </div>
+        <div onclick="switchView('view-gift')">
+            <span class="nav-icon">🎁</span>
+            <span>Voucher</span>
+        </div>
+        <div onclick="switchView('view-admin')" id="admin-nav-tab" class="hidden">
+            <span class="nav-icon">🛡️</span>
+            <span>Admin</span>
+        </div>
     </div>
 
     <!-- Scripts -->
     <script src="app.js"></script>
     <script>
-        document.getElementById('btn-login').addEventListener('click', function() {
-            if(typeof handleAuth === 'function') { handleAuth('login'); } else { alert("App logic loading, please wait..."); }
-        });
-        document.getElementById('btn-register').addEventListener('click', function() {
-            if(typeof handleAuth === 'function') { handleAuth('register'); } else { alert("App logic loading, please wait..."); }
-        });
+        let isRegisterMode = false;
+
+        function toggleAuthMode() {
+            isRegisterMode = !isRegisterMode;
+            const nameGroup = document.getElementById('name-group');
+            const mainTitle = document.getElementById('auth-main-title');
+            const mainSubtitle = document.getElementById('auth-main-subtitle');
+            const submitBtn = document.getElementById('btn-submit-action');
+            const toggleBtn = document.getElementById('btn-toggle-mode');
+            const forgotLink = document.getElementById('forgot-password-link');
+
+            if (isRegisterMode) {
+                nameGroup.style.display = 'block';
+                mainTitle.innerText = "Create your account.";
+                mainSubtitle.innerText = "Enter your details below to get started with Maggi Finance.";
+                submitBtn.innerText = "Create Account →";
+                toggleBtn.innerText = "Already have an account? Log in";
+                forgotLink.style.display = 'none';
+            } else {
+                nameGroup.style.display = 'none';
+                mainTitle.innerText = "Log in to Maggi.";
+                mainSubtitle.innerText = "Enter your account details to continue.";
+                submitBtn.innerText = "Log In →";
+                toggleBtn.innerText = "Create an account";
+                forgotLink.style.display = 'block';
+            }
+        }
+
+        function handleAuthAction() {
+            if (typeof handleAuth === 'function') {
+                handleAuth(isRegisterMode ? 'register' : 'login');
+            } else {
+                alert("App logic loading, please wait...");
+            }
+        }
     </script>
 </body>
 </html>
