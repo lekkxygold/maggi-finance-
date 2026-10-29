@@ -288,4 +288,31 @@
                     <input type="text" id="admin-code" placeholder="Code String (e.g. MAGGI500)">
                     <input type="number" id="admin-amount" placeholder="Naira Value (e.g. 1000)">
                     <input type="number" id="admin-qty" placeholder="Total Claims Allowed">
-                    <button class="btn" style="
+                    <button class="btn" style="margin-top:8px;" onclick="createAdminGiftCode()">Issue Gift Code</button>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Navigation -->
+    <div id="app-nav" class="nav-tabs hidden">
+        <div onclick="switchView('view-dashboard')" class="active">Dash</div>
+        <div onclick="switchView('view-investment')">Plans</div>
+        <div onclick="switchView('view-wallet')">Wallet</div>
+        <div onclick="switchView('view-team')">Team</div>
+        <div onclick="switchView('view-gift')">Voucher</div>
+        <div onclick="switchView('view-admin')" id="admin-nav-tab" class="hidden">Admin</div>
+    </div>
+
+    <!-- Scripts -->
+    <script src="app.js"></script>
+    <script>
+        document.getElementById('btn-login').addEventListener('click', function() {
+            if(typeof handleAuth === 'function') { handleAuth('login'); } else { alert("App logic loading, please wait..."); }
+        });
+        document.getElementById('btn-register').addEventListener('click', function() {
+            if(typeof handleAuth === 'function') { handleAuth('register'); } else { alert("App logic loading, please wait..."); }
+        });
+    </script>
+</body>
+</html>
