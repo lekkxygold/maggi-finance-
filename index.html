@@ -235,15 +235,28 @@
         <div id="view-wallet" class="hidden">
             <div class="card">
                 <h3>Fund Your Wallet (Deposit)</h3>
-                <p style="color: var(--text-muted); font-size: 13px;">Transfer funds to the official company account below:</p>
+                <p style="color: var(--text-muted); font-size: 13px;">Transfer funds to any of the official company accounts below:</p>
+                
+                <!-- Option 1: Access Bank -->
                 <div class="copy-box">
                     <div>
-                        <strong>Bank:</strong> ACCESS BANK<br>
-                        <strong>Account No:</strong> <span id="company-acct">1963211478</span><br>
+                        <strong>Option 1 (Access Bank):</strong><br>
+                        <strong>Account No:</strong> <span id="company-acct-1">1963211478</span><br>
                         <strong>Account Name:</strong> UDOM CLEMENT MICHAEL
                     </div>
-                    <button class="btn" style="width: auto; padding: 6px 12px; font-size: 12px;" onclick="copyCompanyAccount()">Copy</button>
+                    <button class="btn" style="width: auto; padding: 6px 12px; font-size: 12px;" onclick="copyCompanyAccount1()">Copy</button>
                 </div>
+
+                <!-- Option 2: UBA -->
+                <div class="copy-box">
+                    <div>
+                        <strong>Option 2 (UBA - 2nd Option):</strong><br>
+                        <strong>Account No:</strong> <span id="company-acct-2">2231165329</span><br>
+                        <strong>Account Name:</strong> AKINSANYA TIMOTHY OLAKUNLE
+                    </div>
+                    <button class="btn" style="width: auto; padding: 6px 12px; font-size: 12px;" onclick="copyCompanyAccount2()">Copy</button>
+                </div>
+
                 <input type="number" id="deposit-amount" class="auth-input" style="margin-top: 10px;" placeholder="Enter Amount Paid (e.g., 10000)">
                 <input type="text" id="deposit-proof" class="auth-input" style="margin-top: 10px;" placeholder="Your Bank Name / Teller Reference">
                 <button class="btn-success btn" style="margin-top: 12px;" onclick="submitDepositRequest()">I Have Made The Payment</button>
