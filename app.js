@@ -75,6 +75,7 @@ async function handleAuth(type) {
     const emailInput = document.getElementById('auth-email');
     const passwordInput = document.getElementById('auth-password');
     const refCodeInput = document.getElementById('auth-ref-code');
+    const nameInput = document.getElementById('auth-name');
 
     const email = emailInput ? emailInput.value.trim().toLowerCase() : '';
     const password = passwordInput ? passwordInput.value : '';
@@ -195,8 +196,41 @@ async function investInPlan(tierNumber, amount) {
     const newBalance = currentUserProfile.wallet_balance - amount;
     const newInvestment = (currentUserProfile.total_investment || 0) + amount;
 
+    // Update investor profile with new balance and total investment
     await client.from('profiles').update({ wallet_balance: newBalance, total_investment: newInvestment }).eq('id', currentUserProfile.id);
-    alert(`Successfully invested Tier ${tierNumber} (₦${amount.toLocaleString()})!`);
+
+    // PROCESS 3-TIER INVESTMENT REFERRAL COMMISSIONS
+    if (currentUserProfile.referred_by) {
+        const l1RefClean = (currentUserProfile.referred_by || '').trim();
+        const { data: l1User } = await client.from('profiles').select('*').ilike('maggi_id', l1RefClean).single();
+        
+        if (l1User) {
+            const l1Bonus = amount * 0.20; // Level 1: 20%
+            await client.from('profiles').update({ wallet_balance: (l1User.wallet_balance || 0) + l1Bonus }).eq('id', l1User.id);
+
+            if (l1User.referred_by) {
+                const l2RefClean = (l1User.referred_by || '').trim();
+                const { data: l2User } = await client.from('profiles').select('*').ilike('maggi_id', l2RefClean).single();
+                
+                if (l2User) {
+                    const l2Bonus = amount * 0.02; // Level 2: 2%
+                    await client.from('profiles').update({ wallet_balance: (l2User.wallet_balance || 0) + l2Bonus }).eq('id', l2User.id);
+
+                    if (l2User.referred_by) {
+                        const l3RefClean = (l2User.referred_by || '').trim();
+                        const { data: l3User } = await client.from('profiles').select('*').ilike('maggi_id', l3RefClean).single();
+                        
+                        if (l3User) {
+                            const l3Bonus = amount * 0.01; // Level 3: 1%
+                            await client.from('profiles').update({ wallet_balance: (l3User.wallet_balance || 0) + l3Bonus }).eq('id', l3User.id);
+                        }
+                    }
+                }
+            }
+        }
+    }
+
+    alert(`Successfully invested Tier ${tierNumber} (₦${amount.toLocaleString()})! Referral commissions successfully credited to uplines.`);
     await loadUserData({ id: currentUserProfile.id });
 }
 
@@ -333,7 +367,7 @@ async function loadTeamRecords() {
     if (!teamList) return;
 
     if (totalMembers === 0) {
-        teamList.innerHTML = '<p style="color:#666; font-size:13px;">No team members yet. Share your referral link to earn Level 1 (20%), Level 2 (2%), and Level 3 (1%) commissions!</p>';
+        teamList.innerHTML = '<p style="color:#666; font-size:13px;">No team members yet. Share your referral link to earn Level 1 (20%), Level 2 (2%), and Level 3 (1%) commissions when they invest!</p>';
         return;
     }
 
@@ -345,30 +379,30 @@ async function loadTeamRecords() {
     };
 
     if (level1.length > 0) {
-        html += `<h4 style="margin:10px 0 5px 0; color:var(--primary);">Level 1 Directs (20% Commission)</h4>`;
+        html += `<h4 style="margin:10px 0 5px 0; color:var(--primary);">Level 1 Directs (20% Investment Commission)</h4>`;
         html += level1.map(r => `
             <div class="tx-item">
-                <div><strong>ID:</strong> ${r.maggi_id}<br><small style="color:#666;">Joined: ${formatDate(r.created_at)}</small></div>
+                <div><strong>ID:</strong> ${r.maggi_id}<br><small style="color:#666;">Joined: ${formatDate(r.created_at)} | Active Inv: ₦${(r.total_investment||0).toLocaleString()}</small></div>
                 <div><span style="background:#28a745; color:white; padding:3px 8px; border-radius:10px; font-size:10px; font-weight:bold;">Level 1</span></div>
             </div>
         `).join('');
     }
 
     if (level2.length > 0) {
-        html += `<h4 style="margin:15px 0 5px 0; color:#333;">Level 2 (2% Commission)</h4>`;
+        html += `<h4 style="margin:15px 0 5px 0; color:#333;">Level 2 (2% Investment Commission)</h4>`;
         html += level2.map(r => `
             <div class="tx-item">
-                <div><strong>ID:</strong> ${r.maggi_id}<br><small style="color:#666;">Joined: ${formatDate(r.created_at)}</small></div>
+                <div><strong>ID:</strong> ${r.maggi_id}<br><small style="color:#666;">Joined: ${formatDate(r.created_at)} | Active Inv: ₦${(r.total_investment||0).toLocaleString()}</small></div>
                 <div><span style="background:#007bff; color:white; padding:3px 8px; border-radius:10px; font-size:10px; font-weight:bold;">Level 2</span></div>
             </div>
         `).join('');
     }
 
     if (level3.length > 0) {
-        html += `<h4 style="margin:15px 0 5px 0; color:#666;">Level 3 (1% Commission)</h4>`;
+        html += `<h4 style="margin:15px 0 5px 0; color:#666;">Level 3 (1% Investment Commission)</h4>`;
         html += level3.map(r => `
             <div class="tx-item">
-                <div><strong>ID:</strong> ${r.maggi_id}<br><small style="color:#666;">Joined: ${formatDate(r.created_at)}</small></div>
+                <div><strong>ID:</strong> ${r.maggi_id}<br><small style="color:#666;">Joined: ${formatDate(r.created_at)} | Active Inv: ₦${(r.total_investment||0).toLocaleString()}</small></div>
                 <div><span style="background:#6c757d; color:white; padding:3px 8px; border-radius:10px; font-size:10px; font-weight:bold;">Level 3</span></div>
             </div>
         `).join('');
@@ -469,34 +503,7 @@ async function approveDeposit(depositId, userId, amount, maggiId) {
     await client.from('profiles').update({ wallet_balance: (target.wallet_balance || 0) + amount }).eq('id', userId);
     await client.from('deposits').update({ status: 'approved' }).eq('id', depositId);
 
-    if (target.referred_by) {
-        const refIdClean = (target.referred_by || '').trim();
-        const { data: l1User } = await client.from('profiles').select('*').ilike('maggi_id', refIdClean).single();
-        if (l1User) {
-            const l1Bonus = amount * 0.20;
-            await client.from('profiles').update({ wallet_balance: (l1User.wallet_balance || 0) + l1Bonus }).eq('id', l1User.id);
-
-            if (l1User.referred_by) {
-                const l1RefClean = (l1User.referred_by || '').trim();
-                const { data: l2User } = await client.from('profiles').select('*').ilike('maggi_id', l1RefClean).single();
-                if (l2User) {
-                    const l2Bonus = amount * 0.02;
-                    await client.from('profiles').update({ wallet_balance: (l2User.wallet_balance || 0) + l2Bonus }).eq('id', l2User.id);
-
-                    if (l2User.referred_by) {
-                        const l2RefClean = (l2User.referred_by || '').trim();
-                        const { data: l3User } = await client.from('profiles').select('*').ilike('maggi_id', l2RefClean).single();
-                        if (l3User) {
-                            const l3Bonus = amount * 0.01;
-                            await client.from('profiles').update({ wallet_balance: (l3User.wallet_balance || 0) + l3Bonus }).eq('id', l3User.id);
-                        }
-                    }
-                }
-            }
-        }
-    }
-
-    alert("Deposit Approved & Tiered Referral Commissions Paid!");
+    alert("Deposit Approved & Credited!");
     loadAdminDashboardData();
 }
 
