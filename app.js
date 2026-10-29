@@ -1,6 +1,84 @@
 // Initialization credentials configuration setup
 const SUPABASE_URL = "https://athszjeyyxosemqyzmzz.supabase.co";
-const SUPABASE_ANON_KEY = "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImF0aHN6amV5eXhvc2VtcXl6bXp6Iiwicm9sZSI6ImFub24iLCJpYXQiOjE3OTMyMDM0ODksImV4cCI6MjEwODc3OTQ4OX0.MjF0uusJGt9LK48Mv7xqc1sBgyXrvZk-_g8n19fGsrA";
+const SUPA// 3-Level Team Records Loader (Safe Null-Check Version)
+async function loadTeamRecords() {
+    const client = bootstrapSupabaseClient();
+    if (!client || !currentUserProfile) return;
+
+    // Select all profiles cleanly
+    const { data: allProfiles, error } = await client.from('profiles').select('*');
+    
+    if (error) {
+        console.error("Team Fetch Error:", error);
+        return;
+    }
+    if (!allProfiles) return;
+
+    const myId = (currentUserProfile.maggi_id || '').trim().toLowerCase();
+
+    // Level 1: Direct Referrals
+    const level1 = allProfiles.filter(p => (p.referred_by || '').trim().toLowerCase() === myId);
+    const level1Ids = new Set(level1.map(p => (p.maggi_id || '').trim().toLowerCase()));
+
+    // Level 2: Secondary Referrals
+    const level2 = allProfiles.filter(p => level1Ids.has((p.referred_by || '').trim().toLowerCase()));
+    const level2Ids = new Set(level2.map(p => (p.maggi_id || '').trim().toLowerCase()));
+
+    // Level 3: Tertiary Referrals
+    const level3 = allProfiles.filter(p => level2Ids.has((p.referred_by || '').trim().toLowerCase()));
+
+    const totalMembers = level1.length + level2.length + level3.length;
+    const teamCountEl = document.getElementById('team-count');
+    if (teamCountEl) teamCountEl.innerText = totalMembers;
+
+    const teamList = document.getElementById('team-records-list');
+    if (!teamList) return;
+
+    if (totalMembers === 0) {
+        teamList.innerHTML = '<p style="color:#666; font-size:13px;">No team members yet. Share your referral link to earn Level 1 (20%), Level 2 (2%), and Level 3 (1%) commissions!</p>';
+        return;
+    }
+
+    let html = '';
+
+    const formatDate = (dateStr) => {
+        if (!dateStr) return 'Recently';
+        const d = new Date(dateStr);
+        return isNaN(d.getTime()) ? 'Recently' : d.toLocaleDateString();
+    };
+
+    if (level1.length > 0) {
+        html += `<h4 style="margin:10px 0 5px 0; color:var(--primary);">Level 1 Directs (20% Commission)</h4>`;
+        html += level1.map(r => `
+            <div class="tx-item">
+                <div><strong>ID:</strong> ${r.maggi_id}<br><small style="color:#666;">Joined: ${formatDate(r.created_at)}</small></div>
+                <div><span style="background:#28a745; color:white; padding:3px 8px; border-radius:10px; font-size:10px; font-weight:bold;">Level 1</span></div>
+            </div>
+        `).join('');
+    }
+
+    if (level2.length > 0) {
+        html += `<h4 style="margin:15px 0 5px 0; color:#333;">Level 2 (2% Commission)</h4>`;
+        html += level2.map(r => `
+            <div class="tx-item">
+                <div><strong>ID:</strong> ${r.maggi_id}<br><small style="color:#666;">Joined: ${formatDate(r.created_at)}</small></div>
+                <div><span style="background:#007bff; color:white; padding:3px 8px; border-radius:10px; font-size:10px; font-weight:bold;">Level 2</span></div>
+            </div>
+        `).join('');
+    }
+
+    if (level3.length > 0) {
+        html += `<h4 style="margin:15px 0 5px 0; color:#666;">Level 3 (1% Commission)</h4>`;
+        html += level3.map(r => `
+            <div class="tx-item">
+                <div><strong>ID:</strong> ${r.maggi_id}<br><small style="color:#666;">Joined: ${formatDate(r.created_at)}</small></div>
+                <div><span style="background:#6c757d; color:white; padding:3px 8px; border-radius:10px; font-size:10px; font-weight:bold;">Level 3</span></div>
+            </div>
+        `).join('');
+    }
+
+    teamList.innerHTML = html;
+}BASE_ANON_KEY = "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImF0aHN6amV5eXhvc2VtcXl6bXp6Iiwicm9sZSI6ImFub24iLCJpYXQiOjE3OTMyMDM0ODksImV4cCI6MjEwODc3OTQ4OX0.MjF0uusJGt9LK48Mv7xqc1sBgyXrvZk-_g8n19fGsrA";
 
 let dbClient = null;
 let currentUserProfile = null;
