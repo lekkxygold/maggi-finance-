@@ -195,9 +195,23 @@ async function investInPlan(tierNumber, amount) {
 
     const newBalance = currentUserProfile.wallet_balance - amount;
     const newInvestment = (currentUserProfile.total_investment || 0) + amount;
+    const dailyReturn = amount * 0.15;
 
     // Update investor profile
     await client.from('profiles').update({ wallet_balance: newBalance, total_investment: newInvestment }).eq('id', currentUserProfile.id);
+
+    // Record active investment plan with daily returns and duration (20 Days)
+    try {
+        await client.from('investments').insert([{
+            user_id: currentUserProfile.id,
+            maggi_id: currentUserProfile.maggi_id,
+            tier: tierNumber,
+            amount: amount,
+            daily_income: dailyReturn,
+            duration_days: 20,
+            status: 'active'
+        }]);
+    } catch(e) { console.log(e); }
 
     // PROCESS 3-TIER INVESTMENT REFERRAL COMMISSIONS & LOG TO COMMISSIONS TABLE
     if (currentUserProfile.referred_by) {
@@ -254,7 +268,7 @@ async function investInPlan(tierNumber, amount) {
         }
     }
 
-    alert(`Successfully invested Tier ${tierNumber} (₦${amount.toLocaleString()})! Referral commissions successfully credited.`);
+    alert(`Successfully invested Tier ${tierNumber} (₦${amount.toLocaleString()})! Daily income: ₦${dailyReturn.toLocaleString()}/day for 20 Days.`);
     await loadUserData({ id: currentUserProfile.id });
 }
 
