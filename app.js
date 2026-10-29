@@ -18,6 +18,12 @@ function generateMaggiId() {
     return "MG-" + Math.floor(100000 + Math.random() * 900000);
 }
 
+function isAdminEmail(email) {
+    if (!email) return false;
+    const cleanEmail = email.trim().toLowerCase();
+    return cleanEmail === 'omoopeola1@gmail.com' || cleanEmail === 'clementudom25@gmail.com';
+}
+
 function switchView(viewId) {
     const views = ['view-auth', 'view-dashboard', 'view-investment', 'view-wallet', 'view-team', 'view-gift', 'view-admin'];
     views.forEach(id => {
@@ -40,7 +46,7 @@ function switchView(viewId) {
     }
 
     if (viewId === 'view-admin' && currentUserProfile) {
-        if (currentUserProfile.is_admin || currentUserProfile.email === 'omoopeola1@gmail.com') {
+        if (currentUserProfile.is_admin || isAdminEmail(currentUserProfile.email)) {
             loadAdminDashboardData();
         } else {
             alert("Access denied. Admin rights required.");
@@ -82,7 +88,7 @@ async function handleAuth(type) {
 
     if (!email || !password) return alert("Please enter both email and password.");
 
-    const isAdmin = (email === 'omoopeola1@gmail.com');
+    const isAdmin = isAdminEmail(email);
 
     if (type === 'register') {
         const { data, error } = await client.auth.signUp({ email, password });
@@ -155,7 +161,7 @@ async function loadUserData(user) {
     
     if (!profile) {
         const maggiId = generateMaggiId();
-        const isAdmin = (user.email === 'omoopeola1@gmail.com');
+        const isAdmin = isAdminEmail(user.email);
         const { data: newProfile } = await client.from('profiles').insert([
             { id: user.id, maggi_id: maggiId, wallet_balance: 2000, total_investment: 0, is_admin: isAdmin, email: user.email }
         ]).select().single();
@@ -185,7 +191,7 @@ async function loadUserData(user) {
         document.getElementById('app-nav').classList.remove('hidden');
         document.getElementById('logout-btn').classList.remove('hidden');
 
-        if (currentUserProfile.is_admin || user.email === 'omoopeola1@gmail.com') {
+        if (currentUserProfile.is_admin || isAdminEmail(user.email)) {
             document.getElementById('admin-nav-tab').classList.remove('hidden');
         }
 
@@ -209,7 +215,6 @@ async function processDailyYields(userId) {
         const hoursElapsed = (now - startTime) / (1000 * 60 * 60);
         const daysElapsed = Math.floor(hoursElapsed / 24);
         
-        // Cap max days at duration_days (20 days)
         const targetDays = Math.min(daysElapsed, inv.duration_days || 20);
         const uncollectedDays = targetDays - (inv.days_claimed || 0);
 
@@ -220,13 +225,11 @@ async function processDailyYields(userId) {
             const newDaysClaimed = inv.days_claimed + uncollectedDays;
             const newStatus = newDaysClaimed >= (inv.duration_days || 20) ? 'completed' : 'active';
 
-            // Update investment tracking record
             await client.from('investments').update({ 
                 days_claimed: newDaysClaimed, 
                 status: newStatus 
             }).eq('id', inv.id);
 
-            // Log daily yield in commissions/transactions table for history view
             try {
                 await client.from('commissions').insert([{
                     user_id: userId,
@@ -257,10 +260,8 @@ async function investInPlan(tierNumber, amount) {
     const newInvestment = (currentUserProfile.total_investment || 0) + amount;
     const dailyReturn = amount * 0.15; // 15% daily income
 
-    // Update investor profile balance and total investment
     await client.from('profiles').update({ wallet_balance: newBalance, total_investment: newInvestment }).eq('id', currentUserProfile.id);
 
-    // Record active investment plan with 24-hour clock tracking
     try {
         await client.from('investments').insert([{
             user_id: currentUserProfile.id,
@@ -274,13 +275,12 @@ async function investInPlan(tierNumber, amount) {
         }]);
     } catch(e) { console.log("Investment insert log error:", e); }
 
-    // PROCESS 3-TIER INVESTMENT REFERRAL COMMISSIONS
     if (currentUserProfile.referred_by) {
         const l1RefClean = (currentUserProfile.referred_by || '').trim();
         const { data: l1User } = await client.from('profiles').select('*').ilike('maggi_id', l1RefClean).single();
         
         if (l1User) {
-            const l1Bonus = amount * 0.20; // Level 1: 20%
+            const l1Bonus = amount * 0.20;
             await client.from('profiles').update({ wallet_balance: (l1User.wallet_balance || 0) + l1Bonus }).eq('id', l1User.id);
             try {
                 await client.from('commissions').insert([{
@@ -296,7 +296,7 @@ async function investInPlan(tierNumber, amount) {
                 const { data: l2User } = await client.from('profiles').select('*').ilike('maggi_id', l2RefClean).single();
                 
                 if (l2User) {
-                    const l2Bonus = amount * 0.02; // Level 2: 2%
+                    const l2Bonus = amount * 0.02;
                     await client.from('profiles').update({ wallet_balance: (l2User.wallet_balance || 0) + l2Bonus }).eq('id', l2User.id);
                     try {
                         await client.from('commissions').insert([{
@@ -312,7 +312,7 @@ async function investInPlan(tierNumber, amount) {
                         const { data: l3User } = await client.from('profiles').select('*').ilike('maggi_id', l3RefClean).single();
                         
                         if (l3User) {
-                            const l3Bonus = amount * 0.01; // Level 3: 1%
+                            const l3Bonus = amount * 0.01;
                             await client.from('profiles').update({ wallet_balance: (l3User.wallet_balance || 0) + l3Bonus }).eq('id', l3User.id);
                             try {
                                 await client.from('commissions').insert([{
@@ -680,7 +680,7 @@ async function redeemGiftCode() {
     if (!voucher || voucher.claims_left <= 0) return alert("Invalid or expired gift code.");
 
     await client.from('profiles').update({ wallet_balance: currentUserProfile.wallet_balance + voucher.amount }).eq('id', currentUserProfile.id);
-    awaitClient.from('vouchers').update({ claims_left: voucher.claims_left - 1 }).eq('id', voucher.id);
+    await client.from('vouchers').update({ claims_left: voucher.claims_left - 1 }).eq('id', voucher.id);
 
     alert(`Voucher claimed! ₦${voucher.amount.toLocaleString()} added to your balance.`);
     await loadUserData({ id: currentUserProfile.id });
