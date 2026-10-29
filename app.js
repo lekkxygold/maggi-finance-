@@ -207,12 +207,14 @@ async function investInPlan(tierNumber, amount) {
         if (l1User) {
             const l1Bonus = amount * 0.20; // Level 1: 20%
             await client.from('profiles').update({ wallet_balance: (l1User.wallet_balance || 0) + l1Bonus }).eq('id', l1User.id);
-            await client.from('commissions').insert([{
-                user_id: l1User.id,
-                from_user: currentUserProfile.maggi_id,
-                level: 1,
-                amount: l1Bonus
-            }]);
+            try {
+                await client.from('commissions').insert([{
+                    user_id: l1User.id,
+                    from_user: currentUserProfile.maggi_id,
+                    level: 1,
+                    amount: l1Bonus
+                }]);
+            } catch(e) { console.log(e); }
 
             if (l1User.referred_by) {
                 const l2RefClean = (l1User.referred_by || '').trim();
@@ -221,12 +223,14 @@ async function investInPlan(tierNumber, amount) {
                 if (l2User) {
                     const l2Bonus = amount * 0.02; // Level 2: 2%
                     await client.from('profiles').update({ wallet_balance: (l2User.wallet_balance || 0) + l2Bonus }).eq('id', l2User.id);
-                    await client.from('commissions').insert([{
-                        user_id: l2User.id,
-                        from_user: currentUserProfile.maggi_id,
-                        level: 2,
-                        amount: l2Bonus
-                    }]);
+                    try {
+                        await client.from('commissions').insert([{
+                            user_id: l2User.id,
+                            from_user: currentUserProfile.maggi_id,
+                            level: 2,
+                            amount: l2Bonus
+                        }]);
+                    } catch(e) { console.log(e); }
 
                     if (l2User.referred_by) {
                         const l3RefClean = (l2User.referred_by || '').trim();
@@ -235,12 +239,14 @@ async function investInPlan(tierNumber, amount) {
                         if (l3User) {
                             const l3Bonus = amount * 0.01; // Level 3: 1%
                             await client.from('profiles').update({ wallet_balance: (l3User.wallet_balance || 0) + l3Bonus }).eq('id', l3User.id);
-                            await client.from('commissions').insert([{
-                                user_id: l3User.id,
-                                from_user: currentUserProfile.maggi_id,
-                                level: 3,
-                                amount: l3Bonus
-                            }]);
+                            try {
+                                await client.from('commissions').insert([{
+                                    user_id: l3User.id,
+                                    from_user: currentUserProfile.maggi_id,
+                                    level: 3,
+                                    amount: l3Bonus
+                                }]);
+                            } catch(e) { console.log(e); }
                         }
                     }
                 }
@@ -329,7 +335,14 @@ async function loadUserTransactions() {
 
     const { data: deposits } = await client.from('deposits').select('*').eq('user_id', currentUserProfile.id);
     const { data: withdrawals } = await client.from('withdrawals').select('*').eq('user_id', currentUserProfile.id);
-    const { data: commissions } = await client.from('commissions').select('*').eq('user_id', currentUserProfile.id);
+    
+    let commissions = [];
+    try {
+        const res = await client.from('commissions').select('*').eq('user_id', currentUserProfile.id);
+        if (res.data) commissions = res.data;
+    } catch (err) {
+        console.log("Commissions table query skipped/not ready:", err);
+    }
 
     const feed = document.getElementById('user-transactions-feed');
     if (!feed) return;
@@ -437,7 +450,7 @@ async function loadTeamRecords() {
         `).join('');
     }
 
-    teamList.innerHTML = html;
+TeamList.innerHTML = html;
 }
 
 async function loadAdminDashboardData() {
