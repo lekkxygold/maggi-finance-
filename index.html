@@ -29,12 +29,14 @@
         .auth-input:focus { outline: none; border-color: var(--primary); background: #fff; }
         .auth-input::placeholder { color: #9ca3af; }
         
-        .btn { background: var(--primary); color: white; border: none; padding: 12px 20px; width: 100%; border-radius: 10px; font-weight: bold; font-size: 15px; cursor: pointer; transition: background 0.2s; }
+        .btn { background: var(--primary); color: white; border: none; padding: 12px 20px; width: 100%; border-radius: 10px; font-weight: bold; font-size: 15px; cursor: pointer; transition: background 0.2s; text-decoration: none; display: inline-block; text-align: center; box-sizing: border-box; }
         .btn:hover { background: var(--primary-hover); }
         .btn-secondary { background: transparent; color: var(--text-main); border: 1px solid var(--border-color); margin-top: 10px; }
         .btn-secondary:hover { background: #f3f4f6; }
         .btn-success { background: #28a745; color: white; }
         .btn-danger { background: #dc3545; color: white; }
+        .btn-telegram { background: #0088cc; color: white; }
+        .btn-telegram:hover { background: #006699; }
 
         /* Modern Navigation Bar Design with Icons */
         .nav-tabs { display: grid; grid-template-columns: repeat(6, 1fr); background: white; border-top: 1px solid var(--border-color); position: fixed; bottom: 0; width: 100%; font-size: 11px; text-align: center; z-index: 1000; box-shadow: 0 -4px 12px rgba(0,0,0,0.06); }
@@ -137,6 +139,20 @@
                 <h1 style="margin: 6px 0; font-size: 28px;" id="dash-balance">₦0.00</h1>
                 <small id="dash-investment" style="opacity: 0.9;">Active Investments: ₦0.00</small>
             </div>
+
+            <!-- Telegram Support & Announcement Card -->
+            <div class="card" style="background: #f0f9ff; border: 1px solid #bae6fd;">
+                <div style="display: flex; align-items: center; gap: 10px; margin-bottom: 8px;">
+                    <span style="font-size: 22px;">📢</span>
+                    <h3 style="margin: 0; color: #0369a1; font-size: 16px;">Official Telegram Community</h3>
+                </div>
+                <p style="font-size: 12px; color: #334155; line-height: 1.5; margin: 0 0 12px 0;">
+                    Welcome to Maggi Finance! Join our official Telegram group for instant support, daily announcements, updates, and community help.
+                </p>
+                <a href="https://t.me/+P1Fmmz0qVrQ0MTc8" target="_blank" class="btn btn-telegram" style="font-size: 13px; padding: 10px;">
+                    Join Telegram Support Group 🚀
+                </a>
+            </div>
             
             <div class="card">
                 <h3>Quick Actions</h3>
@@ -154,90 +170,90 @@
                 <!-- Tier 1 -->
                 <div class="tier-box">
                     <div>
-                        <img src="plan1.jpg" alt="Tier 1 Plan" style="width:100%; height:100px; object-fit:cover; border-radius:8px; margin-bottom:6px;">
+                        <img src="plan1.jpg" alt="Tier 1 Plan" style="width:100%; height:110px; object-fit:cover; border-radius:8px; margin-bottom:6px;">
                         <h4 style="margin:4px 0; font-size:14px; color: var(--primary);">Tier 1 Plan</h4>
-                        <p style="margin:0; font-size:12px; color:var(--text-muted);">₦6,000 Entry</p>
+                        <p style="margin:0; font-size:11px; color:var(--text-muted);">₦6,000 Entry (₦900/day)</p>
                     </div>
                     <button class="btn" style="padding:8px; font-size:12px; margin-top:8px;" onclick="investInPlan(1, 6000)">Invest Now</button>
                 </div>
                 <!-- Tier 2 -->
                 <div class="tier-box">
                     <div>
-                        <img src="plan2.jpg" alt="Tier 2 Plan" style="width:100%; height:100px; object-fit:cover; border-radius:8px; margin-bottom:6px;">
+                        <img src="plan2.jpg" alt="Tier 2 Plan" style="width:100%; height:110px; object-fit:cover; border-radius:8px; margin-bottom:6px;">
                         <h4 style="margin:4px 0; font-size:14px; color: var(--primary);">Tier 2 Plan</h4>
-                        <p style="margin:0; font-size:12px; color:var(--text-muted);">₦12,000 Entry</p>
+                        <p style="margin:0; font-size:11px; color:var(--text-muted);">₦12,000 Entry (₦1,800/day)</p>
                     </div>
                     <button class="btn" style="padding:8px; font-size:12px; margin-top:8px;" onclick="investInPlan(2, 12000)">Invest Now</button>
                 </div>
                 <!-- Tier 3 -->
                 <div class="tier-box">
                     <div>
-                        <img src="plan3.jpg" alt="Tier 3 Plan" style="width:100%; height:100px; object-fit:cover; border-radius:8px; margin-bottom:6px;">
+                        <img src="plan3.jpg" alt="Tier 3 Plan" style="width:100%; height:110px; object-fit:cover; border-radius:8px; margin-bottom:6px;">
                         <h4 style="margin:4px 0; font-size:14px; color: var(--primary);">Tier 3 Plan</h4>
-                        <p style="margin:0; font-size:12px; color:var(--text-muted);">₦24,000 Entry</p>
+                        <p style="margin:0; font-size:11px; color:var(--text-muted);">₦24,000 Entry (₦3,600/day)</p>
                     </div>
                     <button class="btn" style="padding:8px; font-size:12px; margin-top:8px;" onclick="investInPlan(3, 24000)">Invest Now</button>
                 </div>
                 <!-- Tier 4 -->
                 <div class="tier-box">
                     <div>
-                        <img src="plan4.jpg" alt="Tier 4 Plan" style="width:100%; height:100px; object-fit:cover; border-radius:8px; margin-bottom:6px;">
+                        <img src="plan4.jpg" alt="Tier 4 Plan" style="width:100%; height:110px; object-fit:cover; border-radius:8px; margin-bottom:6px;">
                         <h4 style="margin:4px 0; font-size:14px; color: var(--primary);">Tier 4 Plan</h4>
-                        <p style="margin:0; font-size:12px; color:var(--text-muted);">₦36,000 Entry</p>
+                        <p style="margin:0; font-size:11px; color:var(--text-muted);">₦36,000 Entry (₦5,400/day)</p>
                     </div>
                     <button class="btn" style="padding:8px; font-size:12px; margin-top:8px;" onclick="investInPlan(4, 36000)">Invest Now</button>
                 </div>
                 <!-- Tier 5 (Coming Soon) -->
                 <div class="tier-box" style="opacity: 0.6; background: #f3f4f6; border-color: #d1d5db;">
                     <div>
-                        <div style="width:100%; height:100px; background:#e5e7eb; border-radius:8px; display:flex; align-items:center; justify-content:center; margin-bottom:6px; font-weight:bold; color:var(--text-muted); font-size:12px;">Coming Soon</div>
+                        <div style="width:100%; height:110px; background:#e5e7eb; border-radius:8px; display:flex; align-items:center; justify-content:center; margin-bottom:6px; font-weight:bold; color:var(--text-muted); font-size:12px;">Coming Soon</div>
                         <h4 style="margin:4px 0; font-size:14px;">Tier 5 Plan</h4>
-                        <p style="margin:0; font-size:12px; color:var(--text-muted);">Locked</p>
+                        <p style="margin:0; font-size:11px; color:var(--text-muted);">₦60,000 Entry (₦9,000/day)</p>
                     </div>
                     <button class="btn btn-secondary" style="padding:8px; font-size:12px; margin-top:8px; cursor:not-allowed;" disabled>Coming Soon</button>
                 </div>
                 <!-- Tier 6 (Coming Soon) -->
                 <div class="tier-box" style="opacity: 0.6; background: #f3f4f6; border-color: #d1d5db;">
                     <div>
-                        <div style="width:100%; height:100px; background:#e5e7eb; border-radius:8px; display:flex; align-items:center; justify-content:center; margin-bottom:6px; font-weight:bold; color:var(--text-muted); font-size:12px;">Coming Soon</div>
+                        <div style="width:100%; height:110px; background:#e5e7eb; border-radius:8px; display:flex; align-items:center; justify-content:center; margin-bottom:6px; font-weight:bold; color:var(--text-muted); font-size:12px;">Coming Soon</div>
                         <h4 style="margin:4px 0; font-size:14px;">Tier 6 Plan</h4>
-                        <p style="margin:0; font-size:12px; color:var(--text-muted);">Locked</p>
+                        <p style="margin:0; font-size:11px; color:var(--text-muted);">₦100,000 Entry (₦15,000/day)</p>
                     </div>
                     <button class="btn btn-secondary" style="padding:8px; font-size:12px; margin-top:8px; cursor:not-allowed;" disabled>Coming Soon</button>
                 </div>
                 <!-- Tier 7 (Coming Soon) -->
                 <div class="tier-box" style="opacity: 0.6; background: #f3f4f6; border-color: #d1d5db;">
                     <div>
-                        <div style="width:100%; height:100px; background:#e5e7eb; border-radius:8px; display:flex; align-items:center; justify-content:center; margin-bottom:6px; font-weight:bold; color:var(--text-muted); font-size:12px;">Coming Soon</div>
+                        <div style="width:100%; height:110px; background:#e5e7eb; border-radius:8px; display:flex; align-items:center; justify-content:center; margin-bottom:6px; font-weight:bold; color:var(--text-muted); font-size:12px;">Coming Soon</div>
                         <h4 style="margin:4px 0; font-size:14px;">Tier 7 Plan</h4>
-                        <p style="margin:0; font-size:12px; color:var(--text-muted);">Locked</p>
+                        <p style="margin:0; font-size:11px; color:var(--text-muted);">₦200,000 Entry (₦30,000/day)</p>
                     </div>
                     <button class="btn btn-secondary" style="padding:8px; font-size:12px; margin-top:8px; cursor:not-allowed;" disabled>Coming Soon</button>
                 </div>
                 <!-- Tier 8 (Coming Soon) -->
                 <div class="tier-box" style="opacity: 0.6; background: #f3f4f6; border-color: #d1d5db;">
                     <div>
-                        <div style="width:100%; height:100px; background:#e5e7eb; border-radius:8px; display:flex; align-items:center; justify-content:center; margin-bottom:6px; font-weight:bold; color:var(--text-muted); font-size:12px;">Coming Soon</div>
+                        <div style="width:100%; height:110px; background:#e5e7eb; border-radius:8px; display:flex; align-items:center; justify-content:center; margin-bottom:6px; font-weight:bold; color:var(--text-muted); font-size:12px;">Coming Soon</div>
                         <h4 style="margin:4px 0; font-size:14px;">Tier 8 Plan</h4>
-                        <p style="margin:0; font-size:12px; color:var(--text-muted);">Locked</p>
+                        <p style="margin:0; font-size:11px; color:var(--text-muted);">₦350,000 Entry (₦52,500/day)</p>
                     </div>
                     <button class="btn btn-secondary" style="padding:8px; font-size:12px; margin-top:8px; cursor:not-allowed;" disabled>Coming Soon</button>
                 </div>
                 <!-- Tier 9 (Coming Soon) -->
                 <div class="tier-box" style="opacity: 0.6; background: #f3f4f6; border-color: #d1d5db;">
                     <div>
-                        <div style="width:100%; height:100px; background:#e5e7eb; border-radius:8px; display:flex; align-items:center; justify-content:center; margin-bottom:6px; font-weight:bold; color:var(--text-muted); font-size:12px;">Coming Soon</div>
+                        <div style="width:100%; height:110px; background:#e5e7eb; border-radius:8px; display:flex; align-items:center; justify-content:center; margin-bottom:6px; font-weight:bold; color:var(--text-muted); font-size:12px;">Coming Soon</div>
                         <h4 style="margin:4px 0; font-size:14px;">Tier 9 Plan</h4>
-                        <p style="margin:0; font-size:12px; color:var(--text-muted);">Locked</p>
+                        <p style="margin:0; font-size:11px; color:var(--text-muted);">₦500,000 Entry (₦75,000/day)</p>
                     </div>
                     <button class="btn btn-secondary" style="padding:8px; font-size:12px; margin-top:8px; cursor:not-allowed;" disabled>Coming Soon</button>
                 </div>
                 <!-- Tier 10 (Coming Soon) -->
                 <div class="tier-box" style="opacity: 0.6; background: #f3f4f6; border-color: #d1d5db;">
                     <div>
-                        <div style="width:100%; height:100px; background:#e5e7eb; border-radius:8px; display:flex; align-items:center; justify-content:center; margin-bottom:6px; font-weight:bold; color:var(--text-muted); font-size:12px;">Coming Soon</div>
+                        <div style="width:100%; height:110px; background:#e5e7eb; border-radius:8px; display:flex; align-items:center; justify-content:center; margin-bottom:6px; font-weight:bold; color:var(--text-muted); font-size:12px;">Coming Soon</div>
                         <h4 style="margin:4px 0; font-size:14px;">Tier 10 Plan</h4>
-                        <p style="margin:0; font-size:12px; color:var(--text-muted);">Locked</p>
+                        <p style="margin:0; font-size:11px; color:var(--text-muted);">₦1,000,000 Entry (₦150,000/day)</p>
                     </div>
                     <button class="btn btn-secondary" style="padding:8px; font-size:12px; margin-top:8px; cursor:not-allowed;" disabled>Coming Soon</button>
                 </div>
