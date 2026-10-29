@@ -450,7 +450,7 @@ async function loadTeamRecords() {
         `).join('');
     }
 
-TeamList.innerHTML = html;
+    teamList.innerHTML = html;
 }
 
 async function loadAdminDashboardData() {
