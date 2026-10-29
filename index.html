@@ -4,10 +4,7 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Maggi Finance Investment Platform</title>
-    <!-- Custom Browser Tab Favicon -->
     <link rel="icon" type="image/jpeg" href="logo.jpg">
-    
-    <!-- Include Supabase CDN -->
     <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
     <style>
         :root { --primary: #e62310; --primary-hover: #c51d0d; --accent: #f2c200; --light: #f8f9fa; --card-bg: #ffffff; --border-color: #e5e7eb; --text-main: #1f2937; --text-muted: #6b7280; }
@@ -16,8 +13,6 @@
         .header-left { display: flex; align-items: center; gap: 12px; }
         .header img { height: 40px; width: 40px; object-fit: cover; border-radius: 8px; border: 2px solid white; background: white; }
         .container { padding: 20px 15px; max-width: 480px; margin: 0 auto; }
-        
-        /* Auth Card Layout matching reference */
         .auth-card { background: var(--card-bg); border: 1px solid var(--border-color); padding: 30px 24px; border-radius: 16px; margin-bottom: 20px; box-shadow: 0 10px 25px rgba(0,0,0,0.05); }
         .auth-title { font-size: 24px; font-weight: bold; margin: 0 0 6px 0; color: var(--text-main); }
         .auth-subtitle { font-size: 13px; color: var(--text-muted); margin: 0 0 24px 0; line-height: 1.5; }
@@ -28,7 +23,6 @@
         .auth-input { width: 100%; padding: 12px 14px 12px 42px; background: #f9fafb; border: 1px solid var(--border-color); border-radius: 10px; color: var(--text-main); font-size: 14px; box-sizing: border-box; transition: border-color 0.2s; }
         .auth-input:focus { outline: none; border-color: var(--primary); background: #fff; }
         .auth-input::placeholder { color: #9ca3af; }
-        
         .btn { background: var(--primary); color: white; border: none; padding: 12px 20px; width: 100%; border-radius: 10px; font-weight: bold; font-size: 15px; cursor: pointer; transition: background 0.2s; text-decoration: none; display: inline-block; text-align: center; box-sizing: border-box; }
         .btn:hover { background: var(--primary-hover); }
         .btn-secondary { background: transparent; color: var(--text-main); border: 1px solid var(--border-color); margin-top: 10px; }
@@ -37,20 +31,15 @@
         .btn-danger { background: #dc3545; color: white; }
         .btn-telegram { background: #0088cc; color: white; }
         .btn-telegram:hover { background: #006699; }
-
-        /* Modern Navigation Bar Design with Icons */
         .nav-tabs { display: grid; grid-template-columns: repeat(6, 1fr); background: white; border-top: 1px solid var(--border-color); position: fixed; bottom: 0; width: 100%; font-size: 11px; text-align: center; z-index: 1000; box-shadow: 0 -4px 12px rgba(0,0,0,0.06); }
         .nav-tabs div { padding: 8px 0 10px 0; cursor: pointer; color: var(--text-muted); border-top: 3px solid transparent; transition: all 0.2s ease; display: flex; flex-direction: column; align-items: center; gap: 2px; }
         .nav-tabs div span.nav-icon { font-size: 16px; }
         .nav-tabs .active { border-top-color: var(--primary); font-weight: bold; color: var(--primary); background: #fffaf9; }
-        
         .tier-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 12px; }
         .tier-box { background: #fffde6; border: 1px solid var(--accent); padding: 14px; border-radius: 12px; text-align: center; display: flex; flex-direction: column; justify-content: space-between; }
         .card { background: white; border: 1px solid var(--border-color); padding: 20px; border-radius: 16px; margin-bottom: 15px; box-shadow: 0 2px 4px rgba(0,0,0,0.02); }
         .hidden { display: none !important; }
         .copy-box { background: #f1f1f1; border: 1px solid var(--border-color); padding: 12px; border-radius: 10px; font-size: 13px; display: flex; justify-content: space-between; align-items: center; margin: 8px 0; word-break: break-all; }
-
-        /* Admin Dark Theme */
         .admin-theme { background: #121212; color: #fff; padding: 15px; border-radius: 16px; }
         .admin-nav { display: flex; gap: 8px; background: #252525; padding: 6px; border-radius: 12px; margin-bottom: 15px; }
         .admin-nav-btn { flex: 1; background: transparent; border: none; color: #aaa; padding: 8px; border-radius: 8px; font-size: 11px; font-weight: bold; cursor: pointer; }
@@ -65,7 +54,6 @@
 </head>
 <body>
 
-    <!-- Header with Logout Option -->
     <div class="header">
         <div class="header-left">
             <img src="logo.jpg" alt="Maggi Logo">
@@ -78,10 +66,9 @@
     </div>
 
     <div class="container" style="margin-bottom: 80px;">
-        <!-- Auth View -->
         <div id="view-auth" class="auth-card">
             <div style="display: flex; align-items: center; gap: 8px; margin-bottom: 15px;">
-                <span style="background: #fff8dc; color: #b45309; font-size: 11px; font-weight: bold; padding: 4px 10px; border-radius: 20px; border: 1px solid #fef3c7;">✨ WELCOME BONUS: ₦2,000</span>
+                <span style="background: #fff8dc; color: #b45309; font-size: 11px; font-weight: bold; padding: 4px 10px; border-radius: 20px; border: 1px solid #fef3c7;">✨ WELCOME BONUS: ₦1,500</span>
             </div>
             
             <h1 class="auth-title" id="auth-main-title">Log in to Maggi.</h1>
@@ -126,12 +113,9 @@
             <button class="btn btn-secondary" id="btn-toggle-mode" onclick="toggleAuthMode()">Create an account</button>
         </div>
 
-        <!-- Dashboard View -->
         <div id="view-dashboard" class="hidden">
             <div class="card" style="padding: 0; overflow: hidden; border: none; margin-bottom: 15px;">
-                <img src="banner.jpg" 
-                     alt="Maggi Finance Banner" 
-                     style="width: 100%; height: 150px; object-fit: cover; display: block;">
+                <img src="banner.jpg" alt="Maggi Finance Banner" style="width: 100%; height: 150px; object-fit: cover; display: block;">
             </div>
 
             <div class="card" style="background: linear-gradient(135deg, var(--primary), #b01507); color: white; border: none;">
@@ -140,7 +124,6 @@
                 <small id="dash-investment" style="opacity: 0.9;">Active Investments: ₦0.00</small>
             </div>
 
-            <!-- Telegram Support & Announcement Card -->
             <div class="card" style="background: #f0f9ff; border: 1px solid #bae6fd;">
                 <div style="display: flex; align-items: center; gap: 10px; margin-bottom: 8px;">
                     <span style="font-size: 22px;">📢</span>
@@ -162,12 +145,10 @@
             </div>
         </div>
 
-        <!-- Investment View -->
         <div id="view-investment" class="hidden">
             <h3>Maggi Fixed Income Tiers</h3>
             <p><small style="color: var(--text-muted);">*All open plans earn 15% daily yield payouts for 20 days.</small></p>
             <div class="tier-grid">
-                <!-- Tier 1 -->
                 <div class="tier-box">
                     <div>
                         <img src="plan1.jpg" alt="Tier 1 Plan" style="width:100%; height:110px; object-fit:cover; border-radius:8px; margin-bottom:6px;">
@@ -176,7 +157,6 @@
                     </div>
                     <button class="btn" style="padding:8px; font-size:12px; margin-top:8px;" onclick="investInPlan(1, 6000)">Invest Now</button>
                 </div>
-                <!-- Tier 2 -->
                 <div class="tier-box">
                     <div>
                         <img src="plan2.jpg" alt="Tier 2 Plan" style="width:100%; height:110px; object-fit:cover; border-radius:8px; margin-bottom:6px;">
@@ -185,7 +165,6 @@
                     </div>
                     <button class="btn" style="padding:8px; font-size:12px; margin-top:8px;" onclick="investInPlan(2, 12000)">Invest Now</button>
                 </div>
-                <!-- Tier 3 -->
                 <div class="tier-box">
                     <div>
                         <img src="plan3.jpg" alt="Tier 3 Plan" style="width:100%; height:110px; object-fit:cover; border-radius:8px; margin-bottom:6px;">
@@ -194,7 +173,6 @@
                     </div>
                     <button class="btn" style="padding:8px; font-size:12px; margin-top:8px;" onclick="investInPlan(3, 24000)">Invest Now</button>
                 </div>
-                <!-- Tier 4 -->
                 <div class="tier-box">
                     <div>
                         <img src="plan4.jpg" alt="Tier 4 Plan" style="width:100%; height:110px; object-fit:cover; border-radius:8px; margin-bottom:6px;">
@@ -203,7 +181,6 @@
                     </div>
                     <button class="btn" style="padding:8px; font-size:12px; margin-top:8px;" onclick="investInPlan(4, 36000)">Invest Now</button>
                 </div>
-                <!-- Tier 5 (Coming Soon) -->
                 <div class="tier-box" style="opacity: 0.6; background: #f3f4f6; border-color: #d1d5db;">
                     <div>
                         <div style="width:100%; height:110px; background:#e5e7eb; border-radius:8px; display:flex; align-items:center; justify-content:center; margin-bottom:6px; font-weight:bold; color:var(--text-muted); font-size:12px;">Coming Soon</div>
@@ -212,7 +189,6 @@
                     </div>
                     <button class="btn btn-secondary" style="padding:8px; font-size:12px; margin-top:8px; cursor:not-allowed;" disabled>Coming Soon</button>
                 </div>
-                <!-- Tier 6 (Coming Soon) -->
                 <div class="tier-box" style="opacity: 0.6; background: #f3f4f6; border-color: #d1d5db;">
                     <div>
                         <div style="width:100%; height:110px; background:#e5e7eb; border-radius:8px; display:flex; align-items:center; justify-content:center; margin-bottom:6px; font-weight:bold; color:var(--text-muted); font-size:12px;">Coming Soon</div>
@@ -221,7 +197,6 @@
                     </div>
                     <button class="btn btn-secondary" style="padding:8px; font-size:12px; margin-top:8px; cursor:not-allowed;" disabled>Coming Soon</button>
                 </div>
-                <!-- Tier 7 (Coming Soon) -->
                 <div class="tier-box" style="opacity: 0.6; background: #f3f4f6; border-color: #d1d5db;">
                     <div>
                         <div style="width:100%; height:110px; background:#e5e7eb; border-radius:8px; display:flex; align-items:center; justify-content:center; margin-bottom:6px; font-weight:bold; color:var(--text-muted); font-size:12px;">Coming Soon</div>
@@ -230,7 +205,6 @@
                     </div>
                     <button class="btn btn-secondary" style="padding:8px; font-size:12px; margin-top:8px; cursor:not-allowed;" disabled>Coming Soon</button>
                 </div>
-                <!-- Tier 8 (Coming Soon) -->
                 <div class="tier-box" style="opacity: 0.6; background: #f3f4f6; border-color: #d1d5db;">
                     <div>
                         <div style="width:100%; height:110px; background:#e5e7eb; border-radius:8px; display:flex; align-items:center; justify-content:center; margin-bottom:6px; font-weight:bold; color:var(--text-muted); font-size:12px;">Coming Soon</div>
@@ -239,7 +213,6 @@
                     </div>
                     <button class="btn btn-secondary" style="padding:8px; font-size:12px; margin-top:8px; cursor:not-allowed;" disabled>Coming Soon</button>
                 </div>
-                <!-- Tier 9 (Coming Soon) -->
                 <div class="tier-box" style="opacity: 0.6; background: #f3f4f6; border-color: #d1d5db;">
                     <div>
                         <div style="width:100%; height:110px; background:#e5e7eb; border-radius:8px; display:flex; align-items:center; justify-content:center; margin-bottom:6px; font-weight:bold; color:var(--text-muted); font-size:12px;">Coming Soon</div>
@@ -248,7 +221,6 @@
                     </div>
                     <button class="btn btn-secondary" style="padding:8px; font-size:12px; margin-top:8px; cursor:not-allowed;" disabled>Coming Soon</button>
                 </div>
-                <!-- Tier 10 (Coming Soon) -->
                 <div class="tier-box" style="opacity: 0.6; background: #f3f4f6; border-color: #d1d5db;">
                     <div>
                         <div style="width:100%; height:110px; background:#e5e7eb; border-radius:8px; display:flex; align-items:center; justify-content:center; margin-bottom:6px; font-weight:bold; color:var(--text-muted); font-size:12px;">Coming Soon</div>
@@ -260,7 +232,6 @@
             </div>
         </div>
 
-        <!-- Wallet View -->
         <div id="view-wallet" class="hidden">
             <div class="card">
                 <h3>Fund Your Wallet (Deposit)</h3>
@@ -280,7 +251,7 @@
 
             <div class="card">
                 <h3>Bank Account & Withdrawal</h3>
-                <p style="color: var(--text-muted); font-size: 13px;">Minimum Payout: <strong>₦2,000</strong> (Requires Active Investment)</p>
+                <p style="color: var(--text-muted); font-size: 13px;">Minimum Payout: <strong>₦1,500</strong> (14% Fee Applies | Requires Active Investment)</p>
                 
                 <input type="text" id="bank-name" class="auth-input" style="margin-top: 6px;" placeholder="Bank Name (e.g. OPay, Access)">
                 <input type="text" id="account-number" class="auth-input" style="margin-top: 6px;" placeholder="Account Number">
@@ -297,7 +268,6 @@
             </div>
         </div>
 
-        <!-- Team & Referral Network View -->
         <div id="view-team" class="hidden">
             <div class="card">
                 <h3>3-Tier Referral Commissions</h3>
@@ -319,7 +289,6 @@
             </div>
         </div>
 
-        <!-- Gift View -->
         <div id="view-gift" class="hidden">
             <div class="card">
                 <h3>Redeem Special Gift Code</h3>
@@ -328,7 +297,6 @@
             </div>
         </div>
 
-        <!-- Admin Control Hub -->
         <div id="view-admin" class="hidden">
             <div class="admin-theme">
                 <div class="admin-nav">
@@ -365,7 +333,6 @@
         </div>
     </div>
 
-    <!-- Navigation Bar -->
     <div id="app-nav" class="nav-tabs hidden">
         <div onclick="switchView('view-dashboard')" class="active">
             <span class="nav-icon">🏠</span>
@@ -393,7 +360,6 @@
         </div>
     </div>
 
-    <!-- Scripts -->
     <script src="app.js"></script>
     <script>
         let isRegisterMode = false;
