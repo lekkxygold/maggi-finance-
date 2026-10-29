@@ -336,9 +336,14 @@ async function investInPlan(tierNumber, amount) {
     await loadUserData({ id: currentUserProfile.id });
 }
 
-function copyCompanyAccount() {
+function copyCompanyAccount1() {
     navigator.clipboard.writeText("1963211478");
     alert("Copied Access Bank Account: 1963211478!");
+}
+
+function copyCompanyAccount2() {
+    navigator.clipboard.writeText("2231165329");
+    alert("Copied UBA Account: 2231165329!");
 }
 
 function copyReferralLink() {
