@@ -22,7 +22,7 @@
         .nav-tabs div { padding: 12px 0; cursor: pointer; border-top: 3px solid transparent; }
         .nav-tabs .active { border-top-color: var(--primary); font-weight: bold; color: var(--primary); }
         .tier-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 10px; }
-        .tier-box { background: #fffde6; border: 1px solid var(--accent); padding: 12px; border-radius: 8px; text-align: center; }
+        .tier-box { background: #fffde6; border: 1px solid var(--accent); padding: 12px; border-radius: 8px; text-align: center; display: flex; flex-direction: column; justify-content: space-between; }
         .hidden { display: none !important; }
         input, select { width: 100%; padding: 10px; margin: 8px 0; border: 1px solid #ccc; border-radius: 6px; box-sizing: border-box; }
         .copy-box { background: #f1f1f1; padding: 10px; border-radius: 6px; font-size: 13px; display: flex; justify-content: space-between; align-items: center; margin: 8px 0; word-break: break-all; }
@@ -96,25 +96,95 @@
             <h3>Maggi Fixed Income Tiers</h3>
             <p><small>*All open plans earn 15% daily yield payouts for 20 days.</small></p>
             <div class="tier-grid">
+                <!-- Tier 1 -->
                 <div class="tier-box">
-                    <img src="plan1.jpg" alt="Tier 1 Plan" style="width:100%; height:110px; object-fit:cover; border-radius:6px; margin-bottom:6px;">
-                    <h4 style="margin:4px 0; font-size:14px;">Tier 1 Plan</h4>
-                    <p style="margin:0; font-size:12px; color:#555;">₦6,000 Entry</p>
+                    <div>
+                        <img src="plan1.jpg" alt="Tier 1 Plan" style="width:100%; height:110px; object-fit:cover; border-radius:6px; margin-bottom:6px;">
+                        <h4 style="margin:4px 0; font-size:14px;">Tier 1 Plan</h4>
+                        <p style="margin:0; font-size:12px; color:#555;">₦6,000 Entry</p>
+                    </div>
+                    <button class="btn" style="padding:8px; font-size:13px; margin-top:8px;" onclick="investInPlan(1, 6000)">Invest Now</button>
                 </div>
+                <!-- Tier 2 -->
                 <div class="tier-box">
-                    <img src="plan2.jpg" alt="Tier 2 Plan" style="width:100%; height:110px; object-fit:cover; border-radius:6px; margin-bottom:6px;">
-                    <h4 style="margin:4px 0; font-size:14px;">Tier 2 Plan</h4>
-                    <p style="margin:0; font-size:12px; color:#555;">₦12,000 Entry</p>
+                    <div>
+                        <img src="plan2.jpg" alt="Tier 2 Plan" style="width:100%; height:110px; object-fit:cover; border-radius:6px; margin-bottom:6px;">
+                        <h4 style="margin:4px 0; font-size:14px;">Tier 2 Plan</h4>
+                        <p style="margin:0; font-size:12px; color:#555;">₦12,000 Entry</p>
+                    </div>
+                    <button class="btn" style="padding:8px; font-size:13px; margin-top:8px;" onclick="investInPlan(2, 12000)">Invest Now</button>
                 </div>
+                <!-- Tier 3 -->
                 <div class="tier-box">
-                    <img src="plan3.jpg" alt="Tier 3 Plan" style="width:100%; height:110px; object-fit:cover; border-radius:6px; margin-bottom:6px;">
-                    <h4 style="margin:4px 0; font-size:14px;">Tier 3 Plan</h4>
-                    <p style="margin:0; font-size:12px; color:#555;">₦24,000 Entry</p>
+                    <div>
+                        <img src="plan3.jpg" alt="Tier 3 Plan" style="width:100%; height:110px; object-fit:cover; border-radius:6px; margin-bottom:6px;">
+                        <h4 style="margin:4px 0; font-size:14px;">Tier 3 Plan</h4>
+                        <p style="margin:0; font-size:12px; color:#555;">₦24,000 Entry</p>
+                    </div>
+                    <button class="btn" style="padding:8px; font-size:13px; margin-top:8px;" onclick="investInPlan(3, 24000)">Invest Now</button>
                 </div>
+                <!-- Tier 4 -->
                 <div class="tier-box">
-                    <img src="plan4.jpg" alt="Tier 4 Plan" style="width:100%; height:110px; object-fit:cover; border-radius:6px; margin-bottom:6px;">
-                    <h4 style="margin:4px 0; font-size:14px;">Tier 4 Plan</h4>
-                    <p style="margin:0; font-size:12px; color:#555;">₦36,000 Entry</p>
+                    <div>
+                        <img src="plan4.jpg" alt="Tier 4 Plan" style="width:100%; height:110px; object-fit:cover; border-radius:6px; margin-bottom:6px;">
+                        <h4 style="margin:4px 0; font-size:14px;">Tier 4 Plan</h4>
+                        <p style="margin:0; font-size:12px; color:#555;">₦36,000 Entry</p>
+                    </div>
+                    <button class="btn" style="padding:8px; font-size:13px; margin-top:8px;" onclick="investInPlan(4, 36000)">Invest Now</button>
+                </div>
+                <!-- Tier 5 (Coming Soon) -->
+                <div class="tier-box" style="opacity: 0.7;">
+                    <div>
+                        <div style="width:100%; height:110px; background:#ddd; border-radius:6px; display:flex; align-items:center; justify-content:center; margin-bottom:6px; font-weight:bold; color:#777;">Coming Soon</div>
+                        <h4 style="margin:4px 0; font-size:14px;">Tier 5 Plan</h4>
+                        <p style="margin:0; font-size:12px; color:#555;">Locked</p>
+                    </div>
+                    <button class="btn btn-secondary" style="padding:8px; font-size:13px; margin-top:8px; cursor:not-allowed;" disabled>Coming Soon</button>
+                </div>
+                <!-- Tier 6 (Coming Soon) -->
+                <div class="tier-box" style="opacity: 0.7;">
+                    <div>
+                        <div style="width:100%; height:110px; background:#ddd; border-radius:6px; display:flex; align-items:center; justify-content:center; margin-bottom:6px; font-weight:bold; color:#777;">Coming Soon</div>
+                        <h4 style="margin:4px 0; font-size:14px;">Tier 6 Plan</h4>
+                        <p style="margin:0; font-size:12px; color:#555;">Locked</p>
+                    </div>
+                    <button class="btn btn-secondary" style="padding:8px; font-size:13px; margin-top:8px; cursor:not-allowed;" disabled>Coming Soon</button>
+                </div>
+                <!-- Tier 7 (Coming Soon) -->
+                <div class="tier-box" style="opacity: 0.7;">
+                    <div>
+                        <div style="width:100%; height:110px; background:#ddd; border-radius:6px; display:flex; align-items:center; justify-content:center; margin-bottom:6px; font-weight:bold; color:#777;">Coming Soon</div>
+                        <h4 style="margin:4px 0; font-size:14px;">Tier 7 Plan</h4>
+                        <p style="margin:0; font-size:12px; color:#555;">Locked</p>
+                    </div>
+                    <button class="btn btn-secondary" style="padding:8px; font-size:13px; margin-top:8px; cursor:not-allowed;" disabled>Coming Soon</button>
+                </div>
+                <!-- Tier 8 (Coming Soon) -->
+                <div class="tier-box" style="opacity: 0.7;">
+                    <div>
+                        <div style="width:100%; height:110px; background:#ddd; border-radius:6px; display:flex; align-items:center; justify-content:center; margin-bottom:6px; font-weight:bold; color:#777;">Coming Soon</div>
+                        <h4 style="margin:4px 0; font-size:14px;">Tier 8 Plan</h4>
+                        <p style="margin:0; font-size:12px; color:#555;">Locked</p>
+                    </div>
+                    <button class="btn btn-secondary" style="padding:8px; font-size:13px; margin-top:8px; cursor:not-allowed;" disabled>Coming Soon</button>
+                </div>
+                <!-- Tier 9 (Coming Soon) -->
+                <div class="tier-box" style="opacity: 0.7;">
+                    <div>
+                        <div style="width:100%; height:110px; background:#ddd; border-radius:6px; display:flex; align-items:center; justify-content:center; margin-bottom:6px; font-weight:bold; color:#777;">Coming Soon</div>
+                        <h4 style="margin:4px 0; font-size:14px;">Tier 9 Plan</h4>
+                        <p style="margin:0; font-size:12px; color:#555;">Locked</p>
+                    </div>
+                    <button class="btn btn-secondary" style="padding:8px; font-size:13px; margin-top:8px; cursor:not-allowed;" disabled>Coming Soon</button>
+                </div>
+                <!-- Tier 10 (Coming Soon) -->
+                <div class="tier-box" style="opacity: 0.7;">
+                    <div>
+                        <div style="width:100%; height:110px; background:#ddd; border-radius:6px; display:flex; align-items:center; justify-content:center; margin-bottom:6px; font-weight:bold; color:#777;">Coming Soon</div>
+                        <h4 style="margin:4px 0; font-size:14px;">Tier 10 Plan</h4>
+                        <p style="margin:0; font-size:12px; color:#555;">Locked</p>
+                    </div>
+                    <button class="btn btn-secondary" style="padding:8px; font-size:13px; margin-top:8px; cursor:not-allowed;" disabled>Coming Soon</button>
                 </div>
             </div>
         </div>
@@ -218,31 +288,4 @@
                     <input type="text" id="admin-code" placeholder="Code String (e.g. MAGGI500)">
                     <input type="number" id="admin-amount" placeholder="Naira Value (e.g. 1000)">
                     <input type="number" id="admin-qty" placeholder="Total Claims Allowed">
-                    <button class="btn" style="margin-top:8px;" onclick="createAdminGiftCode()">Issue Gift Code</button>
-                </div>
-            </div>
-        </div>
-    </div>
-
-    <!-- Navigation -->
-    <div id="app-nav" class="nav-tabs hidden">
-        <div onclick="switchView('view-dashboard')" class="active">Dash</div>
-        <div onclick="switchView('view-investment')">Plans</div>
-        <div onclick="switchView('view-wallet')">Wallet</div>
-        <div onclick="switchView('view-team')">Team</div>
-        <div onclick="switchView('view-gift')">Voucher</div>
-        <div onclick="switchView('view-admin')" id="admin-nav-tab" class="hidden">Admin</div>
-    </div>
-
-    <!-- Scripts -->
-    <script src="app.js"></script>
-    <script>
-        document.getElementById('btn-login').addEventListener('click', function() {
-            if(typeof handleAuth === 'function') { handleAuth('login'); } else { alert("App logic loading, please wait..."); }
-        });
-        document.getElementById('btn-register').addEventListener('click', function() {
-            if(typeof handleAuth === 'function') { handleAuth('register'); } else { alert("App logic loading, please wait..."); }
-        });
-    </script>
-</body>
-</html>
+                    <button class="btn" style="
