@@ -75,7 +75,6 @@ async function handleAuth(type) {
     const emailInput = document.getElementById('auth-email');
     const passwordInput = document.getElementById('auth-password');
     const refCodeInput = document.getElementById('auth-ref-code');
-    const nameInput = document.getElementById('auth-name');
 
     const email = emailInput ? emailInput.value.trim().toLowerCase() : '';
     const password = passwordInput ? passwordInput.value : '';
@@ -166,24 +165,85 @@ async function loadUserData(user) {
     if (profile) {
         currentUserProfile = profile;
         
-        document.getElementById('user-id-display').innerText = "Maggi ID: " + (profile.maggi_id || 'N/A');
-        document.getElementById('dash-balance').innerText = "₦" + (profile.wallet_balance || 0).toLocaleString();
-        document.getElementById('dash-investment').innerText = "Active Investments: ₦" + (profile.total_investment || 0).toLocaleString();
+        // CHECK AND ACCRUE AUTOMATED DAILY YIELDS (24-hour intervals for 20 days)
+        await processDailyYields(user.id);
 
-        if (profile.bank_name) document.getElementById('bank-name').value = profile.bank_name;
-        if (profile.account_number) document.getElementById('account-number').value = profile.account_number;
-        if (profile.account_name) document.getElementById('account-name').value = profile.account_name;
+        // Re-fetch profile to get updated wallet balance after yields
+        const { data: updatedProfile } = await client.from('profiles').select('*').eq('id', user.id).single();
+        if (updatedProfile) currentUserProfile = updatedProfile;
 
-        document.getElementById('referral-link-box').innerText = `https://maggi-finance.onrender.com/?ref=${profile.maggi_id}`;
+        document.getElementById('user-id-display').innerText = "Maggi ID: " + (currentUserProfile.maggi_id || 'N/A');
+        document.getElementById('dash-balance').innerText = "₦" + (currentUserProfile.wallet_balance || 0).toLocaleString();
+        document.getElementById('dash-investment').innerText = "Active Investments: ₦" + (currentUserProfile.total_investment || 0).toLocaleString();
+
+        if (currentUserProfile.bank_name) document.getElementById('bank-name').value = currentUserProfile.bank_name;
+        if (currentUserProfile.account_number) document.getElementById('account-number').value = currentUserProfile.account_number;
+        if (currentUserProfile.account_name) document.getElementById('account-name').value = currentUserProfile.account_name;
+
+        document.getElementById('referral-link-box').innerText = `https://maggi-finance.onrender.com/?ref=${currentUserProfile.maggi_id}`;
 
         document.getElementById('app-nav').classList.remove('hidden');
         document.getElementById('logout-btn').classList.remove('hidden');
 
-        if (profile.is_admin || user.email === 'omoopeola1@gmail.com') {
+        if (currentUserProfile.is_admin || user.email === 'omoopeola1@gmail.com') {
             document.getElementById('admin-nav-tab').classList.remove('hidden');
         }
 
         switchView('view-dashboard');
+    }
+}
+
+// Automatically calculates elapsed 24-hour cycles and credits daily income up to 20 days
+async function processDailyYields(userId) {
+    const client = bootstrapSupabaseClient();
+    if (!client) return;
+
+    const { data: investments, error } = await client.from('investments').select('*').eq('user_id', userId).eq('status', 'active');
+    if (error || !investments) return;
+
+    let totalEarningsToAdd = 0;
+    const now = new Date().getTime();
+
+    for (const inv of investments) {
+        const startTime = new Date(inv.created_at).getTime();
+        const hoursElapsed = (now - startTime) / (1000 * 60 * 60);
+        const daysElapsed = Math.floor(hoursElapsed / 24);
+        
+        // Cap max days at duration_days (20 days)
+        const targetDays = Math.min(daysElapsed, inv.duration_days || 20);
+        const uncollectedDays = targetDays - (inv.days_claimed || 0);
+
+        if (uncollectedDays > 0) {
+            const yieldAmount = uncollectedDays * (inv.daily_income || 0);
+            totalEarningsToAdd += yieldAmount;
+
+            const newDaysClaimed = inv.days_claimed + uncollectedDays;
+            const newStatus = newDaysClaimed >= (inv.duration_days || 20) ? 'completed' : 'active';
+
+            // Update investment tracking record
+            await client.from('investments').update({ 
+                days_claimed: newDaysClaimed, 
+                status: newStatus 
+            }).eq('id', inv.id);
+
+            // Log daily yield in commissions/transactions table for history view
+            try {
+                await client.from('commissions').insert([{
+                    user_id: userId,
+                    from_user: `Tier ${inv.tier} Plan (${uncollectedDays} Day(s) Yield)`,
+                    level: 0,
+                    amount: yieldAmount
+                }]);
+            } catch(err) { console.log("Yield log error:", err); }
+        }
+    }
+
+    if (totalEarningsToAdd > 0) {
+        const { data: currentProf } = await client.from('profiles').select('wallet_balance').eq('id', userId).single();
+        if (currentProf) {
+            const newWalletBal = (currentProf.wallet_balance || 0) + totalEarningsToAdd;
+            await client.from('profiles').update({ wallet_balance: newWalletBal }).eq('id', userId);
+        }
     }
 }
 
@@ -195,12 +255,12 @@ async function investInPlan(tierNumber, amount) {
 
     const newBalance = currentUserProfile.wallet_balance - amount;
     const newInvestment = (currentUserProfile.total_investment || 0) + amount;
-    const dailyReturn = amount * 0.15;
+    const dailyReturn = amount * 0.15; // 15% daily income
 
-    // Update investor profile
+    // Update investor profile balance and total investment
     await client.from('profiles').update({ wallet_balance: newBalance, total_investment: newInvestment }).eq('id', currentUserProfile.id);
 
-    // Record active investment plan with daily returns and duration (20 Days)
+    // Record active investment plan with 24-hour clock tracking
     try {
         await client.from('investments').insert([{
             user_id: currentUserProfile.id,
@@ -209,11 +269,12 @@ async function investInPlan(tierNumber, amount) {
             amount: amount,
             daily_income: dailyReturn,
             duration_days: 20,
+            days_claimed: 0,
             status: 'active'
         }]);
-    } catch(e) { console.log(e); }
+    } catch(e) { console.log("Investment insert log error:", e); }
 
-    // PROCESS 3-TIER INVESTMENT REFERRAL COMMISSIONS & LOG TO COMMISSIONS TABLE
+    // PROCESS 3-TIER INVESTMENT REFERRAL COMMISSIONS
     if (currentUserProfile.referred_by) {
         const l1RefClean = (currentUserProfile.referred_by || '').trim();
         const { data: l1User } = await client.from('profiles').select('*').ilike('maggi_id', l1RefClean).single();
@@ -268,7 +329,7 @@ async function investInPlan(tierNumber, amount) {
         }
     }
 
-    alert(`Successfully invested Tier ${tierNumber} (₦${amount.toLocaleString()})! Daily income: ₦${dailyReturn.toLocaleString()}/day for 20 Days.`);
+    alert(`Successfully invested Tier ${tierNumber} (₦${amount.toLocaleString()})! Earns ₦${dailyReturn.toLocaleString()} daily for 20 days.`);
     await loadUserData({ id: currentUserProfile.id });
 }
 
@@ -355,7 +416,7 @@ async function loadUserTransactions() {
         const res = await client.from('commissions').select('*').eq('user_id', currentUserProfile.id);
         if (res.data) commissions = res.data;
     } catch (err) {
-        console.log("Commissions table query skipped/not ready:", err);
+        console.log("Commissions query skipped:", err);
     }
 
     const feed = document.getElementById('user-transactions-feed');
@@ -365,7 +426,12 @@ async function loadUserTransactions() {
     const allTxs = [
         ...(deposits || []).map(d => ({ ...d, type: 'Deposit' })),
         ...(withdrawals || []).map(w => ({ ...w, type: 'Withdrawal' })),
-        ...(commissions || []).map(c => ({ ...c, type: `Referral Commission (Lvl ${c.level})`, status: 'credited', proof: `From: ${c.from_user}` }))
+        ...(commissions || []).map(c => ({ 
+            ...c, 
+            type: c.level > 0 ? `Referral Commission (Lvl ${c.level})` : 'Daily Yield Income', 
+            status: 'credited', 
+            proof: c.level > 0 ? `From: ${c.from_user}` : c.from_user 
+        }))
     ].sort((a, b) => new Date(b.created_at || 0) - new Date(a.created_at || 0));
 
     allTxs.forEach(tx => {
@@ -410,7 +476,6 @@ async function loadTeamRecords() {
     const teamCountEl = document.getElementById('team-count');
     if (teamCountEl) teamCountEl.innerText = totalMembers;
 
-    // Calculate Total Team Deposits / Investments
     const totalTeamInv = [...level1, ...level2, ...level3].reduce((sum, member) => sum + (member.total_investment || 0), 0);
     
     const teamList = document.getElementById('team-records-list');
@@ -615,7 +680,7 @@ async function redeemGiftCode() {
     if (!voucher || voucher.claims_left <= 0) return alert("Invalid or expired gift code.");
 
     await client.from('profiles').update({ wallet_balance: currentUserProfile.wallet_balance + voucher.amount }).eq('id', currentUserProfile.id);
-    await client.from('vouchers').update({ claims_left: voucher.claims_left - 1 }).eq('id', voucher.id);
+    awaitClient.from('vouchers').update({ claims_left: voucher.claims_left - 1 }).eq('id', voucher.id);
 
     alert(`Voucher claimed! ₦${voucher.amount.toLocaleString()} added to your balance.`);
     await loadUserData({ id: currentUserProfile.id });
