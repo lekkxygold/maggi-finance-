@@ -196,10 +196,10 @@ async function investInPlan(tierNumber, amount) {
     const newBalance = currentUserProfile.wallet_balance - amount;
     const newInvestment = (currentUserProfile.total_investment || 0) + amount;
 
-    // Update investor profile with new balance and total investment
+    // Update investor profile
     await client.from('profiles').update({ wallet_balance: newBalance, total_investment: newInvestment }).eq('id', currentUserProfile.id);
 
-    // PROCESS 3-TIER INVESTMENT REFERRAL COMMISSIONS
+    // PROCESS 3-TIER INVESTMENT REFERRAL COMMISSIONS & LOG TO COMMISSIONS TABLE
     if (currentUserProfile.referred_by) {
         const l1RefClean = (currentUserProfile.referred_by || '').trim();
         const { data: l1User } = await client.from('profiles').select('*').ilike('maggi_id', l1RefClean).single();
@@ -207,6 +207,12 @@ async function investInPlan(tierNumber, amount) {
         if (l1User) {
             const l1Bonus = amount * 0.20; // Level 1: 20%
             await client.from('profiles').update({ wallet_balance: (l1User.wallet_balance || 0) + l1Bonus }).eq('id', l1User.id);
+            await client.from('commissions').insert([{
+                user_id: l1User.id,
+                from_user: currentUserProfile.maggi_id,
+                level: 1,
+                amount: l1Bonus
+            }]);
 
             if (l1User.referred_by) {
                 const l2RefClean = (l1User.referred_by || '').trim();
@@ -215,6 +221,12 @@ async function investInPlan(tierNumber, amount) {
                 if (l2User) {
                     const l2Bonus = amount * 0.02; // Level 2: 2%
                     await client.from('profiles').update({ wallet_balance: (l2User.wallet_balance || 0) + l2Bonus }).eq('id', l2User.id);
+                    await client.from('commissions').insert([{
+                        user_id: l2User.id,
+                        from_user: currentUserProfile.maggi_id,
+                        level: 2,
+                        amount: l2Bonus
+                    }]);
 
                     if (l2User.referred_by) {
                         const l3RefClean = (l2User.referred_by || '').trim();
@@ -223,6 +235,12 @@ async function investInPlan(tierNumber, amount) {
                         if (l3User) {
                             const l3Bonus = amount * 0.01; // Level 3: 1%
                             await client.from('profiles').update({ wallet_balance: (l3User.wallet_balance || 0) + l3Bonus }).eq('id', l3User.id);
+                            await client.from('commissions').insert([{
+                                user_id: l3User.id,
+                                from_user: currentUserProfile.maggi_id,
+                                level: 3,
+                                amount: l3Bonus
+                            }]);
                         }
                     }
                 }
@@ -230,7 +248,7 @@ async function investInPlan(tierNumber, amount) {
         }
     }
 
-    alert(`Successfully invested Tier ${tierNumber} (₦${amount.toLocaleString()})! Referral commissions successfully credited to uplines.`);
+    alert(`Successfully invested Tier ${tierNumber} (₦${amount.toLocaleString()})! Referral commissions successfully credited.`);
     await loadUserData({ id: currentUserProfile.id });
 }
 
@@ -311,6 +329,7 @@ async function loadUserTransactions() {
 
     const { data: deposits } = await client.from('deposits').select('*').eq('user_id', currentUserProfile.id);
     const { data: withdrawals } = await client.from('withdrawals').select('*').eq('user_id', currentUserProfile.id);
+    const { data: commissions } = await client.from('commissions').select('*').eq('user_id', currentUserProfile.id);
 
     const feed = document.getElementById('user-transactions-feed');
     if (!feed) return;
@@ -318,12 +337,13 @@ async function loadUserTransactions() {
     let html = '';
     const allTxs = [
         ...(deposits || []).map(d => ({ ...d, type: 'Deposit' })),
-        ...(withdrawals || []).map(w => ({ ...w, type: 'Withdrawal' }))
+        ...(withdrawals || []).map(w => ({ ...w, type: 'Withdrawal' })),
+        ...(commissions || []).map(c => ({ ...c, type: `Referral Commission (Lvl ${c.level})`, status: 'credited', proof: `From: ${c.from_user}` }))
     ].sort((a, b) => new Date(b.created_at || 0) - new Date(a.created_at || 0));
 
     allTxs.forEach(tx => {
         let statusColor = '#f39c12';
-        if (tx.status === 'approved') statusColor = '#28a745';
+        if (tx.status === 'approved' || tx.status === 'credited') statusColor = '#28a745';
         if (tx.status === 'rejected' || tx.status === 'failed') statusColor = '#dc3545';
 
         html += `
@@ -363,15 +383,24 @@ async function loadTeamRecords() {
     const teamCountEl = document.getElementById('team-count');
     if (teamCountEl) teamCountEl.innerText = totalMembers;
 
+    // Calculate Total Team Deposits / Investments
+    const totalTeamInv = [...level1, ...level2, ...level3].reduce((sum, member) => sum + (member.total_investment || 0), 0);
+    
     const teamList = document.getElementById('team-records-list');
     if (!teamList) return;
 
+    let summaryHtml = `
+        <div style="background:#fff8dc; border:1px solid #fef3c7; padding:12px; border-radius:10px; margin-bottom:12px; text-align:center;">
+            <strong style="font-size:14px; color:#b45309;">Total Team Investments/Deposits: ₦${totalTeamInv.toLocaleString()}</strong>
+        </div>
+    `;
+
     if (totalMembers === 0) {
-        teamList.innerHTML = '<p style="color:#666; font-size:13px;">No team members yet. Share your referral link to earn Level 1 (20%), Level 2 (2%), and Level 3 (1%) commissions when they invest!</p>';
+        teamList.innerHTML = summaryHtml + '<p style="color:#666; font-size:13px;">No team members yet. Share your referral link to earn Level 1 (20%), Level 2 (2%), and Level 3 (1%) commissions when they invest!</p>';
         return;
     }
 
-    let html = '';
+    let html = summaryHtml;
     const formatDate = (dateStr) => {
         if (!dateStr) return 'Recently';
         const d = new Date(dateStr);
