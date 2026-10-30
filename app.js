@@ -336,14 +336,9 @@ async function investInPlan(tierNumber, amount) {
     await loadUserData({ id: currentUserProfile.id });
 }
 
-function copyCompanyAccount1() {
+function copyCompanyAccount() {
     navigator.clipboard.writeText("1963211478");
     alert("Copied Access Bank Account: 1963211478!");
-}
-
-function copyCompanyAccount2() {
-    navigator.clipboard.writeText("2231165329");
-    alert("Copied UBA Account: 2231165329!");
 }
 
 function copyReferralLink() {
@@ -359,7 +354,13 @@ async function submitDepositRequest() {
     if (!amount || !proof) return alert("Please fill amount and proof reference.");
 
     const { error } = await client.from('deposits').insert([
-        { user_id: currentUserProfile.id, maggi_id: currentUserProfile.maggi_id, amount: amount, proof: proof, status: 'pending' }
+        { 
+            user_id: currentUserProfile.id, 
+            maggi_id: currentUserProfile.maggi_id || 'MG-USER', 
+            amount: amount, 
+            proof: proof, 
+            status: 'pending' 
+        }
     ]);
 
     if (error) return alert("Deposit submission error: " + error.message);
@@ -402,7 +403,7 @@ async function submitWithdrawalRequest() {
     const { error } = await client.from('withdrawals').insert([
         { 
             user_id: currentUserProfile.id, 
-            maggi_id: currentUserProfile.maggi_id, 
+            maggi_id: currentUserProfile.maggi_id || 'MG-USER', 
             amount: rawAmount, 
             bank_details: bankDetails,
             status: 'pending' 
@@ -548,9 +549,18 @@ async function loadAdminDashboardData() {
     const client = bootstrapSupabaseClient();
     if (!client) return;
 
-    const { data: deposits } = await client.from('deposits').select('*');
-    const { data: withdrawals } = await client.from('withdrawals').select('*');
-    const { data: users } = await client.from('profiles').select('*');
+    const { data: deposits, error: depErr } = await client.from('deposits').select('*');
+    const { data: withdrawals, error: wdErr } = await client.from('withdrawals').select('*');
+    const { data: users, error: userErr } = await client.from('profiles').select('*');
+
+    if (depErr) console.error("Error fetching deposits:", depErr);
+    if (wdErr) console.error("Error fetching withdrawals:", wdErr);
+    if (userErr) console.error("Error fetching users:", userErr);
+
+    const profilesMap = (users || []).reduce((acc, u) => {
+        acc[u.id] = u.maggi_id || u.email || 'N/A';
+        return acc;
+    }, {});
 
     const pendingWd = (withdrawals || []).filter(w => w.status === 'pending');
     const pendingDep = (deposits || []).filter(d => d.status === 'pending');
@@ -563,10 +573,11 @@ async function loadAdminDashboardData() {
     let alertHtml = '';
 
     pendingWd.forEach(w => {
+        const userLabel = w.maggi_id || profilesMap[w.user_id] || 'User';
         alertHtml += `
             <div class="alert-card">
                 <span class="alert-badge">WITHDRAWAL REQUEST</span>
-                <div class="alert-title">${w.maggi_id || 'User'} requested payout</div>
+                <div class="alert-title">${userLabel} requested payout</div>
                 <div class="alert-desc">Details: ${w.bank_details || 'Bank account info attached'}</div>
                 <div class="alert-amount">₦${(w.amount || 0).toLocaleString()}</div>
                 <div style="display:flex; gap:8px; margin-top:8px;">
@@ -578,14 +589,15 @@ async function loadAdminDashboardData() {
     });
 
     pendingDep.forEach(d => {
+        const userLabel = d.maggi_id || profilesMap[d.user_id] || 'User';
         alertHtml += `
             <div class="alert-card">
                 <span class="alert-badge" style="color:#28a745;">DEPOSIT PROOF</span>
-                <div class="alert-title">${d.maggi_id || 'User'} deposited funds</div>
+                <div class="alert-title">${userLabel} deposited funds</div>
                 <div class="alert-desc">Proof: ${d.proof}</div>
                 <div class="alert-amount">₦${(d.amount || 0).toLocaleString()}</div>
                 <div style="display:flex; gap:8px; margin-top:8px;">
-                    <button class="btn-success btn" style="padding:6px; font-size:12px;" onclick="approveDeposit('${d.id}', '${d.user_id}', ${d.amount}, '${d.maggi_id}')">Confirm & Credit</button>
+                    <button class="btn-success btn" style="padding:6px; font-size:12px;" onclick="approveDeposit('${d.id}', '${d.user_id}', ${d.amount}, '${userLabel}')">Confirm & Credit</button>
                     <button class="btn-danger btn" style="padding:6px; font-size:12px;" onclick="rejectDeposit('${d.id}')">Reject / Failed</button>
                 </div>
             </div>
@@ -599,26 +611,32 @@ async function loadAdminDashboardData() {
 
     if (reviewDepList) {
         reviewDepList.innerHTML = pendingDep.length === 0 ? '<p style="color:#aaa;">No pending deposits.</p>' :
-            pendingDep.map(d => `<div style="background:#252525; padding:10px; margin-bottom:8px; border-radius:8px; color:#fff;">
-                <strong>User:</strong> ${d.maggi_id} | <strong>Amount:</strong> ₦${d.amount.toLocaleString()}<br>
-                <strong>Proof:</strong> ${d.proof}<br>
-                <div style="display:flex; gap:6px; margin-top:5px;">
-                    <button class="btn-success btn" style="padding:4px 8px; font-size:12px; width:auto;" onclick="approveDeposit('${d.id}', '${d.user_id}', ${d.amount}, '${d.maggi_id}')">Approve</button>
-                    <button class="btn-danger btn" style="padding:4px 8px; font-size:12px; width:auto;" onclick="rejectDeposit('${d.id}')">Reject</button>
-                </div>
-            </div>`).join('');
+            pendingDep.map(d => {
+                const userLabel = d.maggi_id || profilesMap[d.user_id] || 'User';
+                return `<div style="background:#252525; padding:10px; margin-bottom:8px; border-radius:8px; color:#fff;">
+                    <strong>User:</strong> ${userLabel} | <strong>Amount:</strong> ₦${d.amount.toLocaleString()}<br>
+                    <strong>Proof:</strong> ${d.proof}<br>
+                    <div style="display:flex; gap:6px; margin-top:5px;">
+                        <button class="btn-success btn" style="padding:4px 8px; font-size:12px; width:auto;" onclick="approveDeposit('${d.id}', '${d.user_id}', ${d.amount}, '${userLabel}')">Approve</button>
+                        <button class="btn-danger btn" style="padding:4px 8px; font-size:12px; width:auto;" onclick="rejectDeposit('${d.id}')">Reject</button>
+                    </div>
+                </div>`;
+            }).join('');
     }
 
     if (reviewWdList) {
         reviewWdList.innerHTML = pendingWd.length === 0 ? '<p style="color:#aaa;">No pending withdrawals.</p>' :
-            pendingWd.map(w => `<div style="background:#252525; padding:10px; margin-bottom:8px; border-radius:8px; color:#fff;">
-                <strong>User:</strong> ${w.maggi_id} | <strong>Amount:</strong> ₦${w.amount.toLocaleString()}<br>
-                <strong>Bank:</strong> ${w.bank_details}<br>
-                <div style="display:flex; gap:6px; margin-top:5px;">
-                    <button class="btn-success btn" style="padding:4px 8px; font-size:12px; width:auto;" onclick="approveWithdrawal('${w.id}', '${w.user_id}', ${w.amount})">Approve</button>
-                    <button class="btn-danger btn" style="padding:4px 8px; font-size:12px; width:auto;" onclick="rejectWithdrawal('${w.id}')">Reject</button>
-                </div>
-            </div>`).join('');
+            pendingWd.map(w => {
+                const userLabel = w.maggi_id || profilesMap[w.user_id] || 'User';
+                return `<div style="background:#252525; padding:10px; margin-bottom:8px; border-radius:8px; color:#fff;">
+                    <strong>User:</strong> ${userLabel} | <strong>Amount:</strong> ₦${w.amount.toLocaleString()}<br>
+                    <strong>Bank:</strong> ${w.bank_details}<br>
+                    <div style="display:flex; gap:6px; margin-top:5px;">
+                        <button class="btn-success btn" style="padding:4px 8px; font-size:12px; width:auto;" onclick="approveWithdrawal('${w.id}', '${w.user_id}', ${w.amount})">Approve</button>
+                        <button class="btn-danger btn" style="padding:4px 8px; font-size:12px; width:auto;" onclick="rejectWithdrawal('${w.id}')">Reject</button>
+                    </div>
+                </div>`;
+            }).join('');
     }
 
     const usersContainer = document.getElementById('users-table-container');
@@ -639,7 +657,7 @@ async function loadAdminDashboardData() {
                     <td>₦${(u.total_investment || 0).toLocaleString()}</td>
                 </tr>
             `).join('') + 
-            `</table>`;
+            `table>`;
     }
 }
 
