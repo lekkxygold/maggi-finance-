@@ -225,7 +225,7 @@ async function processDailyYields(userId) {
             const yieldAmount = uncollectedDays * (inv.daily_income || 0);
             totalEarningsToAdd += yieldAmount;
 
-            const newDaysClaimed = inv.days_claimed + uncollectedDays;
+            const newDaysClaimed = (inv.days_claimed || 0) + uncollectedDays;
             const newStatus = newDaysClaimed >= (inv.duration_days || 20) ? 'completed' : 'active';
 
             await client.from('investments').update({ 
@@ -657,7 +657,7 @@ async function loadAdminDashboardData() {
                     <td>₦${(u.total_investment || 0).toLocaleString()}</td>
                 </tr>
             `).join('') + 
-            `table>`;
+            `</table>`;
     }
 }
 
