@@ -5,6 +5,11 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Maggi Finance — Secure Wealth Management</title>
     <link rel="icon" type="image/jpeg" href="logo.jpg">
+    <!-- PWA Manifest & Meta Tags -->
+    <link rel="manifest" href="manifest.json">
+    <meta name="theme-color" content="#0B132B">
+    <meta name="apple-mobile-web-app-capable" content="yes">
+    <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
     <!-- Modern Typography: Plus Jakarta Sans -->
     <link href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@400;500;600;700;800&display=swap" rel="stylesheet">
     <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
@@ -36,7 +41,7 @@
             -webkit-font-smoothing: antialiased;
         }
 
-        /* 1. Header & Profile */
+        /* Header & Profile */
         .header {
             background: rgba(255, 255, 255, 0.85);
             backdrop-filter: blur(12px);
@@ -155,7 +160,7 @@
         .btn-success:hover { background: #059669; }
         .btn-telegram { background: #0088cc; box-shadow: 0 4px 14px rgba(0, 136, 204, 0.25); }
 
-        /* 2. Promotional / Welcome Card Redesign */
+        /* Promotional / Welcome Card */
         .promo-card {
             background: linear-gradient(135deg, var(--brand-navy) 0%, var(--brand-navy-light) 100%);
             color: #FFFFFF;
@@ -177,7 +182,7 @@
             border-radius: 50%;
         }
 
-        /* 3. Wallet Balance Card Redesign */
+        /* Wallet Balance Card */
         .hero-balance {
             background: var(--card-bg);
             border: 1px solid var(--border-subtle);
@@ -219,7 +224,7 @@
         .tier-card:hover { border-color: var(--accent-coral); box-shadow: var(--shadow-card); }
         .tier-img { width: 100%; height: 110px; object-fit: cover; border-radius: var(--radius-sm); margin-bottom: 10px; }
 
-        /* 5. Bottom Navigation Bar */
+        /* Bottom Navigation Bar */
         .nav-tabs {
             display: grid;
             grid-template-columns: repeat(6, 1fr);
@@ -274,7 +279,7 @@
 </head>
 <body>
 
-    <!-- 1. Header & Profile -->
+    <!-- Header & Profile -->
     <div class="header">
         <div class="header-left">
             <img src="logo.jpg" alt="Maggi Logo">
@@ -334,7 +339,7 @@
 
         <!-- Dashboard View -->
         <div id="view-dashboard" class="hidden">
-            <!-- 2. Promotional/Welcome Card -->
+            <!-- Promotional Card -->
             <div class="promo-card">
                 <div style="position: relative; z-index: 2;">
                     <span style="font-size: 11px; font-weight: 700; text-transform: uppercase; letter-spacing: 1px; color: var(--accent-coral); display: block; margin-bottom: 6px;">Secure Platform Utility</span>
@@ -343,7 +348,7 @@
                 </div>
             </div>
 
-            <!-- 3. Wallet Balance Card -->
+            <!-- Wallet Balance Card -->
             <div class="hero-balance">
                 <div class="balance-label">Available Wallet Balance</div>
                 <div class="balance-amount" id="dash-balance">₦0.00</div>
@@ -352,6 +357,11 @@
                     <span style="color: #10B981; font-weight: 600;">● Live Sync</span>
                 </div>
             </div>
+
+            <!-- Install PWA App Button -->
+            <button class="btn" id="btn-install-app" style="background: #10B981; color: #FFFFFF; display: none; margin-bottom: 16px;" onclick="promptInstallPWA()">
+                📲 Download & Install App
+            </button>
 
             <!-- Community Card -->
             <div class="card" style="background: #F0F9FF; border-color: #BAE6FD;">
@@ -552,7 +562,7 @@
         </div>
     </div>
 
-    <!-- 5. Bottom Navigation Bar -->
+    <!-- Bottom Navigation Bar -->
     <div id="app-nav" class="nav-tabs hidden">
         <div onclick="switchView('view-dashboard')" class="active">
             <span class="nav-icon">📊</span>
@@ -626,6 +636,36 @@
             } else {
                 alert("App logic loading, please wait...");
             }
+        }
+
+        // PWA Install Prompt Logic
+        let deferredPrompt = null;
+        window.addEventListener('beforeinstallprompt', (e) => {
+            e.preventDefault();
+            deferredPrompt = e;
+            const installBtn = document.getElementById('btn-install-app');
+            if (installBtn) installBtn.style.display = 'inline-flex';
+        });
+
+        function promptInstallPWA() {
+            if (deferredPrompt) {
+                deferredPrompt.prompt();
+                deferredPrompt.userChoice.then((choiceResult) => {
+                    if (choiceResult.outcome === 'accepted') {
+                        console.log('User installed the PWA app');
+                    }
+                    deferredPrompt = null;
+                    document.getElementById('btn-install-app').style.display = 'none';
+                });
+            } else {
+                alert("To install on iOS: Tap the Share button in Safari and select 'Add to Home Screen'.");
+            }
+        }
+
+        if ('serviceWorker' in navigator) {
+            navigator.serviceWorker.register('sw.js').then(() => {
+                console.log('PWA Service Worker registered successfully.');
+            });
         }
     </script>
 </body>
