@@ -336,11 +336,6 @@ async function investInPlan(tierNumber, amount) {
     await loadUserData({ id: currentUserProfile.id });
 }
 
-function copyCompanyAccount() {
-    navigator.clipboard.writeText("1963211478");
-    alert("Copied Access Bank Account: 1963211478!");
-}
-
 function copyReferralLink() {
     navigator.clipboard.writeText(document.getElementById('referral-link-box').innerText);
     alert("Referral link copied!");
