@@ -645,23 +645,26 @@ async function loadAdminDashboardData() {
     if (usersContainer && users) {
         usersContainer.innerHTML = `
             <table class="admin-table">
-                <tr>
-                    <th>Maggi ID</th>
-                    <th>User Email / Name</th>
-                    <th>Balance</th>
-                    <th>Investment</th>
-                </tr>` +
+                <thead>
+                    <tr>
+                        <th>Maggi ID</th>
+                        <th>Email / Name</th>
+                        <th>Balance</th>
+                        <th>Investment</th>
+                    </tr>
+                </thead>
+                <tbody>` +
             users.map(u => {
                 const activeInv = userInvestmentsMap[u.id] || u.total_investment || 0;
                 return `
-                <tr>
-                    <td><strong>${u.maggi_id || 'N/A'}</strong></td>
-                    <td>${u.email || 'N/A'}</td>
-                    <td>₦${(u.wallet_balance || 0).toLocaleString()}</td>
-                    <td>₦${activeInv.toLocaleString()}</td>
-                </tr>`;
+                    <tr>
+                        <td><strong>${u.maggi_id || 'N/A'}</strong></td>
+                        <td>${u.email || 'N/A'}</td>
+                        <td>₦${(u.wallet_balance || 0).toLocaleString()}</td>
+                        <td>₦${activeInv.toLocaleString()}</td>
+                    </tr>`;
             }).join('') + 
-            `</table>`;
+            `</tbody></table>`;
     }
 }
 
