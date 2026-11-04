@@ -547,10 +547,17 @@ async function loadAdminDashboardData() {
     const { data: deposits, error: depErr } = await client.from('deposits').select('*');
     const { data: withdrawals, error: wdErr } = await client.from('withdrawals').select('*');
     const { data: users, error: userErr } = await client.from('profiles').select('*');
+    const { data: investments, error: invErr } = await client.from('investments').select('*').eq('status', 'active');
 
     if (depErr) console.error("Error fetching deposits:", depErr);
     if (wdErr) console.error("Error fetching withdrawals:", wdErr);
     if (userErr) console.error("Error fetching users:", userErr);
+    if (invErr) console.error("Error fetching investments:", invErr);
+
+    const userInvestmentsMap = (investments || []).reduce((acc, inv) => {
+        acc[inv.user_id] = (acc[inv.user_id] || 0) + (inv.amount || 0);
+        return acc;
+    }, {});
 
     const profilesMap = (users || []).reduce((acc, u) => {
         acc[u.id] = u.maggi_id || u.email || 'N/A';
@@ -644,14 +651,16 @@ async function loadAdminDashboardData() {
                     <th>Balance</th>
                     <th>Investment</th>
                 </tr>` +
-            users.map(u => `
+            users.map(u => {
+                const activeInv = userInvestmentsMap[u.id] || u.total_investment || 0;
+                return `
                 <tr>
                     <td><strong>${u.maggi_id || 'N/A'}</strong></td>
                     <td>${u.email || 'N/A'}</td>
                     <td>₦${(u.wallet_balance || 0).toLocaleString()}</td>
-                    <td>₦${(u.total_investment || 0).toLocaleString()}</td>
-                </tr>
-            `).join('') + 
+                    <td>₦${activeInv.toLocaleString()}</td>
+                </tr>`;
+            }).join('') + 
             `</table>`;
     }
 }
@@ -708,43 +717,3 @@ async function createAdminGiftCode() {
 
     alert(`Gift code ${code} issued successfully!`);
 }
-
-async function redeemGiftCode() {
-    const client = bootstrapSupabaseClient();
-    const inputCode = document.getElementById('gift-code-input').value.trim();
-
-    if (!inputCode) return alert("Please enter gift code.");
-
-    const { data: voucher } = await client.from('vouchers').select('*').eq('code', inputCode).single();
-
-    if (!voucher || voucher.claims_left <= 0) return alert("Invalid or expired gift code.");
-
-    await client.from('profiles').update({ wallet_balance: currentUserProfile.wallet_balance + voucher.amount }).eq('id', currentUserProfile.id);
-    await client.from('vouchers').update({ claims_left: voucher.claims_left - 1 }).eq('id', voucher.id);
-
-    alert(`Voucher claimed! ₦${voucher.amount.toLocaleString()} added to your balance.`);
-    await loadUserData({ id: currentUserProfile.id });
-}
-
-document.addEventListener('DOMContentLoaded', async () => {
-    const urlParams = new URLSearchParams(window.location.search);
-    const refParam = urlParams.get('ref');
-    if (refParam) {
-        const refInput = document.getElementById('auth-ref-code');
-        if (refInput) {
-            refInput.value = refParam;
-            refInput.readOnly = true;
-        }
-    }
-
-    const client = bootstrapSupabaseClient();
-    if (client) {
-        const { data: { session } } = await client.auth.getSession();
-        if (session && session.user) {
-            await loadUserData(session.user);
-        } else {
-            const idDisplay = document.getElementById('user-id-display');
-            if (idDisplay) idDisplay.innerText = "Maggi ID: Guest";
-        }
-    }
-});
