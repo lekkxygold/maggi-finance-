@@ -278,53 +278,63 @@ async function investInPlan(tierNumber, amount) {
         }]);
     } catch(e) { console.log("Investment insert log error:", e); }
 
+    // Multi-tier referral reward logic (Level 1: 20%, Level 2: 2%, Level 3: 1%)
     if (currentUserProfile.referred_by) {
-        const l1RefClean = (currentUserProfile.referred_by || '').trim();
-        const { data: l1User } = await client.from('profiles').select('*').ilike('maggi_id', l1RefClean).single();
+        const cleanRefCode = currentUserProfile.referred_by.trim();
         
-        if (l1User) {
-            const l1Bonus = amount * 0.20;
-            await client.from('profiles').update({ wallet_balance: (l1User.wallet_balance || 0) + l1Bonus }).eq('id', l1User.id);
-            try {
-                await client.from('commissions').insert([{
-                    user_id: l1User.id,
-                    from_user: currentUserProfile.maggi_id,
-                    level: 1,
-                    amount: l1Bonus
-                }]);
-            } catch(e) { console.log(e); }
+        // Fetch all profiles to ensure safe case-insensitive lookup
+        const { data: allProfiles } = await client.from('profiles').select('*');
+        if (allProfiles && allProfiles.length > 0) {
+            
+            // Level 1 Referrer Lookup
+            const l1User = allProfiles.find(p => (p.maggi_id || '').trim().toLowerCase() === cleanRefCode.toLowerCase());
+            
+            if (l1User) {
+                const l1Bonus = amount * 0.20;
+                await client.from('profiles').update({ wallet_balance: (l1User.wallet_balance || 0) + l1Bonus }).eq('id', l1User.id);
+                try {
+                    await client.from('commissions').insert([{
+                        user_id: l1User.id,
+                        from_user: currentUserProfile.maggi_id,
+                        level: 1,
+                        amount: l1Bonus
+                    }]);
+                } catch(e) { console.log("L1 commission insert error:", e); }
 
-            if (l1User.referred_by) {
-                const l2RefClean = (l1User.referred_by || '').trim();
-                const { data: l2User } = await client.from('profiles').select('*').ilike('maggi_id', l2RefClean).single();
-                
-                if (l2User) {
-                    const l2Bonus = amount * 0.02;
-                    await client.from('profiles').update({ wallet_balance: (l2User.wallet_balance || 0) + l2Bonus }).eq('id', l2User.id);
-                    try {
-                        await client.from('commissions').insert([{
-                            user_id: l2User.id,
-                            from_user: currentUserProfile.maggi_id,
-                            level: 2,
-                            amount: l2Bonus
-                        }]);
-                    } catch(e) { console.log(e); }
+                // Level 2 Referrer Lookup
+                if (l1User.referred_by) {
+                    const l2RefCode = l1User.referred_by.trim();
+                    const l2User = allProfiles.find(p => (p.maggi_id || '').trim().toLowerCase() === l2RefCode.toLowerCase());
+                    
+                    if (l2User) {
+                        const l2Bonus = amount * 0.02;
+                        await client.from('profiles').update({ wallet_balance: (l2User.wallet_balance || 0) + l2Bonus }).eq('id', l2User.id);
+                        try {
+                            await client.from('commissions').insert([{
+                                user_id: l2User.id,
+                                from_user: currentUserProfile.maggi_id,
+                                level: 2,
+                                amount: l2Bonus
+                            }]);
+                        } catch(e) { console.log("L2 commission insert error:", e); }
 
-                    if (l2User.referred_by) {
-                        const l3RefClean = (l2User.referred_by || '').trim();
-                        const { data: l3User } = await client.from('profiles').select('*').ilike('maggi_id', l3RefClean).single();
-                        
-                        if (l3User) {
-                            const l3Bonus = amount * 0.01;
-                            await client.from('profiles').update({ wallet_balance: (l3User.wallet_balance || 0) + l3Bonus }).eq('id', l3User.id);
-                            try {
-                                await client.from('commissions').insert([{
-                                    user_id: l3User.id,
-                                    from_user: currentUserProfile.maggi_id,
-                                    level: 3,
-                                    amount: l3Bonus
-                                }]);
-                            } catch(e) { console.log(e); }
+                        // Level 3 Referrer Lookup
+                        if (l2User.referred_by) {
+                            const l3RefCode = l2User.referred_by.trim();
+                            const l3User = allProfiles.find(p => (p.maggi_id || '').trim().toLowerCase() === l3RefCode.toLowerCase());
+                            
+                            if (l3User) {
+                                const l3Bonus = amount * 0.01;
+                                await client.from('profiles').update({ wallet_balance: (l3User.wallet_balance || 0) + l3Bonus }).eq('id', l3User.id);
+                                try {
+                                    await client.from('commissions').insert([{
+                                        user_id: l3User.id,
+                                        from_user: currentUserProfile.maggi_id,
+                                        level: 3,
+                                        amount: l3Bonus
+                                    }]);
+                                } catch(e) { console.log("L3 commission insert error:", e); }
+                            }
                         }
                     }
                 }
