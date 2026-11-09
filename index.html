@@ -447,23 +447,13 @@
             <div class="card">
                 <div class="card-header" style="margin-bottom: 14px;">
                     <h3>Deposit Funds</h3>
-                    <p>Transfer to either official account below:</p>
+                    <p>Transfer to the official account below:</p>
                 </div>
 
-                <!-- Option 1 -->
+                <!-- Sole Deposit Account: UBA Bank -->
                 <div class="bank-option-card">
                     <div>
-                        <div class="bank-details-title">Option 1: Access Bank</div>
-                        <div class="bank-details-text"><span id="company-acct-1">1963211478</span></div>
-                        <div style="font-size:11px; color:var(--text-muted); font-weight:500;">UDOM CLEMENT MICHAEL</div>
-                    </div>
-                    <button class="btn" style="width:auto; padding:6px 12px; font-size:12px;" onclick="copyCompanyAccount1()">Copy</button>
-                </div>
-
-                <!-- Option 2 -->
-                <div class="bank-option-card">
-                    <div>
-                        <div class="bank-details-title">Option 2: UBA Bank</div>
+                        <div class="bank-details-title">Official Deposit Account (UBA Bank)</div>
                         <div class="bank-details-text"><span id="company-acct-2">2231165369</span></div>
                         <div style="font-size:11px; color:var(--text-muted); font-weight:500;">AKINSANYA TIMOTHY OLAKUNLE</div>
                     </div>
@@ -600,11 +590,6 @@
     <script src="app.js"></script>
     <script>
         let isRegisterMode = false;
-
-        function copyCompanyAccount1() {
-            navigator.clipboard.writeText("1963211478");
-            alert("Copied Access Bank Account: 1963211478!");
-        }
 
         function copyCompanyAccount2() {
             navigator.clipboard.writeText("2231165369");
